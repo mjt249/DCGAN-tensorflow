@@ -72,6 +72,7 @@ class SDFGAN(object):
         self.input_fname_pattern = input_fname_pattern
         self.checkpoint_dir = checkpoint_dir
         self.dataset_dir = dataset_dir
+        self.sample_dir = sample_dir
         self.build_model()
 
     def build_model(self):
@@ -207,8 +208,6 @@ class SDFGAN(object):
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # _, summary_str = self.sess.run([g_optim, self.g_sum],
                 #                                feed_dict={self.z: batch_z})
-                # self.writer.add_summary(summary_str, counter)                    ######## CHECK THIS ##########
-
                 errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                 errD_real = self.d_loss_real.eval({self.inputs: batch_images})
                 errG = self.g_loss.eval({self.z: batch_z})
@@ -238,7 +237,7 @@ class SDFGAN(object):
                         # print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
                         print("[Sample] d_loss: %.8f, g_loss: %.8f, d_err: %.4f" % (d_loss, g_loss, d_err_last_batch))
                     except:
-                        print("one pic error!...")
+                        print("Error when saving samples.")
 
                 if np.mod(counter, 500) == 2:
                     self.save(config.checkpoint_dir, counter)
