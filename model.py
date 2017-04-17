@@ -20,7 +20,7 @@ class SDFGAN(object):
                  batch_size=64, sample_num=64,
                  output_depth=64, output_height=64, output_width=64, z_dim=200, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='shapenet',
-                 input_fname_pattern='*.npy', checkpoint_dir=None, dataset_dir=None, sample_dir=None):
+                 input_fname_pattern='*.npy', checkpoint_dir=None, dataset_dir=None, log_dir=None, sample_dir=None):
         """
 
         Args:
@@ -72,6 +72,7 @@ class SDFGAN(object):
         self.input_fname_pattern = input_fname_pattern
         self.checkpoint_dir = checkpoint_dir
         self.dataset_dir = dataset_dir
+        self.log_dir = log_dir
         self.sample_dir = sample_dir
         self.build_model()
 
@@ -154,7 +155,7 @@ class SDFGAN(object):
                                     self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = merge_summary(
             [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
-        self.writer = SummaryWriter("./logs", self.sess.graph)
+        self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim))
 

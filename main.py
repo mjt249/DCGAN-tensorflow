@@ -29,6 +29,7 @@ flags.DEFINE_string("dataset", "shapenet", "The name of dataset [shapenet]")
 flags.DEFINE_string("input_fname_pattern", "*.npy", "Glob pattern of filename of input sdf [*]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("dataset_dir", "data", "Directory name to read the input training data [data]")
+flags.DEFINE_string("log_dir", "logs", "Directory name to save the log files [logs]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", True, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
@@ -76,6 +77,7 @@ def main(_):
             is_crop=FLAGS.is_crop,
             checkpoint_dir=FLAGS.checkpoint_dir,
             dataset_dir=FLAGS.dataset_dir,
+            log_dir=FLAGS.log_dir,
             sample_dir=FLAGS.sample_dir)
 
         show_all_variables()
