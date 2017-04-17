@@ -20,7 +20,7 @@ class SDFGAN(object):
                  batch_size=64, sample_num=64,
                  output_depth=64, output_height=64, output_width=64, z_dim=200, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='shapenet',
-                 input_fname_pattern='*.npy', checkpoint_dir=None, sample_dir=None):
+                 input_fname_pattern='*.npy', checkpoint_dir=None, dataset_dir=None, sample_dir=None):
         """
 
         Args:
@@ -71,6 +71,7 @@ class SDFGAN(object):
         self.dataset_name = dataset_name
         self.input_fname_pattern = input_fname_pattern
         self.checkpoint_dir = checkpoint_dir
+        self.dataset_dir = dataset_dir
         self.build_model()
 
     def build_model(self):
@@ -100,7 +101,7 @@ class SDFGAN(object):
 
         self.d_sum = histogram_summary("d", self.D)                       # might require changing!!
         self.d__sum = histogram_summary("d_", self.D_)
-        self.G_sum = image_summary("G", self.G)
+        self.G_sum = image_summary("G", self.G[:, 32, :, :])
 
         def sigmoid_cross_entropy_with_logits(x, y):
             try:
@@ -120,8 +121,8 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_err_real, _ = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D.get_shape()[0]         ##ISSUES_HERE##
-        self.d_err_fake, _ = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_err_real = tf.reduce_sum(tf.cast(self.D < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_err_fake = tf.reduce_sum(tf.cast(self.D_ > .5, tf.int32)) / self.D_.get_shape()[0]
         self.d_err = (self.d_err_real + self.d_err_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
@@ -136,7 +137,7 @@ class SDFGAN(object):
 
     def train(self, config):
         """Train SFDGAN"""
-        data = glob(os.path.join("./data", config.dataset, self.input_fname_pattern))
+        data = glob(os.path.join(self.dataset_dir, config.dataset, self.input_fname_pattern))
         np.random.shuffle(data)
 
         d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
@@ -176,7 +177,7 @@ class SDFGAN(object):
         d_err_last_batch = .5
         for epoch in xrange(config.epoch):
             data = glob(os.path.join(
-                "./data", config.dataset, self.input_fname_pattern))
+                self.dataset_dir, config.dataset, self.input_fname_pattern))
             batch_idxs = min(len(data), config.train_size) // config.batch_size
 
             for idx in xrange(0, batch_idxs):
@@ -213,9 +214,12 @@ class SDFGAN(object):
                 errG = self.g_loss.eval({self.z: batch_z})
 
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                # print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                #       % (epoch, idx, batch_idxs,
+                #          time.time() - start_time, errD_fake + errD_real, errG))
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_err: %.4f" \
                       % (epoch, idx, batch_idxs,
-                         time.time() - start_time, errD_fake + errD_real, errG))
+                         time.time() - start_time, errD_fake + errD_real, errG, d_err_last_batch))
 
                 if np.mod(counter, 100) == 1:
                     try:
@@ -231,7 +235,8 @@ class SDFGAN(object):
                         # save_images(samples, [manifold_h, manifold_w],
                         #             './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
                         np.save('./{}/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
-                        print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                        # print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                        print("[Sample] d_loss: %.8f, g_loss: %.8f, d_err: %.4f" % (d_loss, g_loss, d_err_last_batch))
                     except:
                         print("one pic error!...")
 

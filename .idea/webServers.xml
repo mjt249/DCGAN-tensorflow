@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="d445dfb6-b7d6-4659-acce-c5f0d989b223" name="kramer" url="http://island.me.berkeley.edu">
+        <fileTransfer host="island.me.berkeley.edu" port="7777" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="7777" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
