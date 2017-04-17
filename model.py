@@ -120,8 +120,8 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_err_real = tf.metrics.accuracy(tf.ones_like(self.D), self.D > .5)
-        self.d_err_fake = tf.metrics.accuracy(tf.zeros_like(self.D_), self.D < .5)
+        self.d_err_real, _ = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D.get_shape()[0]         ##ISSUES_HERE##
+        self.d_err_fake, _ = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
         self.d_err = (self.d_err_real + self.d_err_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
@@ -159,7 +159,8 @@ class SDFGAN(object):
         sample_files = data[0:self.sample_num]
         sample = [np.load(sample_file)[0, :, :, :] for sample_file in sample_files]
         if (self.is_grayscale):
-            sample_inputs = np.array(sample).astype(np.float32)[:, :, :, :, None]
+            # sample_inputs = np.array(sample).astype(np.float32)[:, :, :, :, None]
+            sample_inputs = np.array(sample).astype(np.float32)
         else:
             sample_inputs = np.array(sample).astype(np.float32)
 

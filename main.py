@@ -3,7 +3,7 @@ import scipy.misc
 import numpy as np
 
 from model import SDFGAN
-from utils import pp, visualize, to_json, show_all_variables
+from utils import pp, show_all_variables
 
 import tensorflow as tf
 
@@ -29,7 +29,7 @@ flags.DEFINE_string("dataset", "shapenet", "The name of dataset [shapenet]")
 flags.DEFINE_string("input_fname_pattern", "*.npy", "Glob pattern of filename of input sdf [*]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
-flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
+flags.DEFINE_boolean("is_train", True, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 FLAGS = flags.FLAGS
@@ -90,8 +90,8 @@ def main(_):
         #                 [dcgan.h4_w, dcgan.h4_b, None])
 
         # Below is codes for visualization
-        OPTION = 1
-        visualize(sess, sdfgan, FLAGS, OPTION)
+        # OPTION = 1
+        # visualize(sess, sdfgan, FLAGS, OPTION)
 
 
 if __name__ == '__main__':
