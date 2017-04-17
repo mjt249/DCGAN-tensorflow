@@ -100,7 +100,7 @@ class SDFGAN(object):
 
         self.d_sum = histogram_summary("d", self.D)                       # might require changing!!
         self.d__sum = histogram_summary("d_", self.D_)
-        self.G_sum = image_summary("G", self.G)
+        self.G_sum = image_summary("G", self.G[:, 32, :, :])
 
         def sigmoid_cross_entropy_with_logits(x, y):
             try:
@@ -120,8 +120,8 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_err_real, _ = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D.get_shape()[0]         ##ISSUES_HERE##
-        self.d_err_fake, _ = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_err_real = tf.reduce_sum(tf.cast(self.D < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_err_fake = tf.reduce_sum(tf.cast(self.D_ > .5, tf.int32)) / self.D_.get_shape()[0]
         self.d_err = (self.d_err_real + self.d_err_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
@@ -213,9 +213,12 @@ class SDFGAN(object):
                 errG = self.g_loss.eval({self.z: batch_z})
 
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                # print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                #       % (epoch, idx, batch_idxs,
+                #          time.time() - start_time, errD_fake + errD_real, errG))
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_err: %.4f" \
                       % (epoch, idx, batch_idxs,
-                         time.time() - start_time, errD_fake + errD_real, errG))
+                         time.time() - start_time, errD_fake + errD_real, errG, d_err_last_batch))
 
                 if np.mod(counter, 100) == 1:
                     try:
@@ -231,7 +234,8 @@ class SDFGAN(object):
                         # save_images(samples, [manifold_h, manifold_w],
                         #             './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
                         np.save('./{}/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
-                        print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                        # print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                        print("[Sample] d_loss: %.8f, g_loss: %.8f, d_err: %.4f" % (d_loss, g_loss, d_err_last_batch))
                     except:
                         print("one pic error!...")
 
