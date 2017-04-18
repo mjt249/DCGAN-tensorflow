@@ -123,9 +123,9 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_err_real = tf.reduce_sum(tf.cast(self.D < .5, tf.int32)) / self.D_.get_shape()[0]
-        self.d_err_fake = tf.reduce_sum(tf.cast(self.D_ > .5, tf.int32)) / self.D_.get_shape()[0]
-        self.d_err = (self.d_err_real + self.d_err_fake) / 2
+        self.d_accu_real = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_accu_fake = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_accu = (self.d_accu_real + self.d_accu_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
         self.d_loss_sum = scalar_summary("d_loss", self.d_loss)
@@ -176,7 +176,7 @@ class SDFGAN(object):
         else:
             print(" [!] Load failed...")
 
-        d_err_last_batch = .5
+        d_accu_last_batch = .5
         for epoch in xrange(config.epoch):
             data = glob(os.path.join(
                 self.dataset_dir, config.dataset, self.input_fname_pattern))
@@ -186,18 +186,15 @@ class SDFGAN(object):
                 batch_files = data[idx * config.batch_size:(idx + 1) * config.batch_size]
                 batch = [
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
-                if (self.is_grayscale):
-                    batch_images = np.array(batch).astype(np.float32)[:, :, :, :, None]
-                else:
-                    batch_images = np.array(batch).astype(np.float32)
+                batch_images = np.array(batch).astype(np.float32)[:, :, :, :, None]
 
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                     .astype(np.float32)
 
                 # Update D network if accuracy in last batch <= 80%
-                if d_err_last_batch < .8:
+                if d_accu_last_batch < .8:
                     # Update D network
-                    _, summary_str, d_err_last_batch = self.sess.run([d_optim, self.d_sum, self.d_err],
+                    _, summary_str, d_accu_last_batch = self.sess.run([d_optim, self.d_sum, self.d_accu],
                                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
                     self.writer.add_summary(summary_str, counter)
 
@@ -217,9 +214,9 @@ class SDFGAN(object):
                 # print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
                 #       % (epoch, idx, batch_idxs,
                 #          time.time() - start_time, errD_fake + errD_real, errG))
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_err: %.4f" \
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" \
                       % (epoch, idx, batch_idxs,
-                         time.time() - start_time, errD_fake + errD_real, errG, d_err_last_batch))
+                         time.time() - start_time, errD_fake + errD_real, errG, d_accu_last_batch))
 
                 if np.mod(counter, 100) == 1:
                     try:
@@ -236,7 +233,7 @@ class SDFGAN(object):
                         #             './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
                         np.save('./{}/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
                         # print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-                        print("[Sample] d_loss: %.8f, g_loss: %.8f, d_err: %.4f" % (d_loss, g_loss, d_err_last_batch))
+                        print("[Sample] d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" % (d_loss, g_loss, d_accu_last_batch))
                     except:
                         print("Error when saving samples.")
 
