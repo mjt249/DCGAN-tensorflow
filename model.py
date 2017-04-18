@@ -206,6 +206,7 @@ class SDFGAN(object):
                 # Update last batch accuracy
                 d_accu_last_batch = self.sess.run([self.d_accu],
                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                d_accu_last_batch = d_accu_last_batch[0]
 
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # _, summary_str = self.sess.run([g_optim, self.g_sum],
