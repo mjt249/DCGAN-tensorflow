@@ -123,8 +123,8 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_accu_real = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D_.get_shape()[0]
-        self.d_accu_fake = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
+        self.d_accu_real = tf.reduce_sum(tf.cast(self.D > .5, tf.float32)) / self.D.get_shape()[0]
+        self.d_accu_fake = tf.reduce_sum(tf.cast(self.D_ < .5, tf.float32)) / self.D_.get_shape()[0]
         self.d_accu = (self.d_accu_real + self.d_accu_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
