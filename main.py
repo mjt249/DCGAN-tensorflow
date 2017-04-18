@@ -9,7 +9,7 @@ import tensorflow as tf
 
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
-flags.DEFINE_float("d_learning_rate", 0.00005, "Learning rate of discrim for adam [0.00005]")
+flags.DEFINE_float("d_learning_rate", 0.0025, "Learning rate of discrim for adam [0.00005]")
 flags.DEFINE_float("g_learning_rate", 0.0025, "Learning rate of gen for adam [0.0025]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
