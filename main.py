@@ -3,7 +3,7 @@ import scipy.misc
 import numpy as np
 
 from model import SDFGAN
-from utils import pp, show_all_variables
+from utils import pp, show_all_variables, create_samples
 
 import tensorflow as tf
 
@@ -86,6 +86,7 @@ def main(_):
         else:
             if not sdfgan.load(FLAGS.checkpoint_dir):
                 raise Exception("[!] Train a model first, then run test mode")
+            create_samples(sess, sdfgan, FLAGS)
 
         # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
         #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
