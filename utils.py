@@ -5,6 +5,7 @@ from __future__ import division
 import math
 import json
 import random
+import os
 import pprint
 import scipy.misc
 import numpy as np
@@ -144,3 +145,10 @@ def to_json(output_path, *layers):
           };""" % (layer_idx, 2 ** (int(layer_idx) + 2), 2 ** (int(layer_idx) + 2),
                    W.shape[0], W.shape[3], biases, gamma, beta, fs)
         layer_f.write(" ".join(lines.replace("'", "").split()))
+
+
+def create_samples(sess, sdfgan, config):
+    z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size,sdfgan.z_dim))
+    samples = sess.run(sdfgan.sampler, feed_dict={sdfgan.z: z_sample})
+    fname = os.path.join(config.sample_dir, "samples.npy")
+    np.save(fname, samples)
