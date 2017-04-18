@@ -148,7 +148,7 @@ def to_json(output_path, *layers):
 
 
 def create_samples(sess, sdfgan, config):
-    z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size,sdfgan.z_dim))
+    z_sample = np.random.uniform(0, 1, size=(config.batch_size,sdfgan.z_dim))
     samples = sess.run(sdfgan.sampler, feed_dict={sdfgan.z: z_sample})
     fname = os.path.join(config.sample_dir, "samples.npy")
     np.save(fname, samples)
