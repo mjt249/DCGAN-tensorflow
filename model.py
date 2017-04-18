@@ -123,8 +123,8 @@ class SDFGAN(object):
 
         self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        self.d_accu_real = tf.reduce_sum(tf.cast(self.D > .5, tf.float32)) / self.D.get_shape()[0]
-        self.d_accu_fake = tf.reduce_sum(tf.cast(self.D_ < .5, tf.float32)) / self.D_.get_shape()[0]
+        self.d_accu_real = tf.reduce_sum(tf.cast(self.D > .5, tf.int32)) / self.D.get_shape()[0]
+        self.d_accu_fake = tf.reduce_sum(tf.cast(self.D_ < .5, tf.int32)) / self.D_.get_shape()[0]
         self.d_accu = (self.d_accu_real + self.d_accu_fake) / 2
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
@@ -194,7 +194,7 @@ class SDFGAN(object):
                 # Update D network if accuracy in last batch <= 80%
                 if d_accu_last_batch < .8:
                     # Update D network
-                    _, summary_str, d_accu_last_batch = self.sess.run([d_optim, self.d_sum, self.d_accu],
+                    _, summary_str = self.sess.run([d_optim, self.d_sum],
                                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
                     self.writer.add_summary(summary_str, counter)
 
@@ -202,6 +202,10 @@ class SDFGAN(object):
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
                                                feed_dict={self.z: batch_z})
                 self.writer.add_summary(summary_str, counter)
+
+                # Update last batch accuracy
+                d_accu_last_batch = self.sess.run([self.d_accu],
+                                                  feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # _, summary_str = self.sess.run([g_optim, self.g_sum],
