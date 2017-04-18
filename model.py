@@ -103,7 +103,7 @@ class SDFGAN(object):
 
         self.d_sum = histogram_summary("d", self.D)                       # might require changing!!
         self.d__sum = histogram_summary("d_", self.D_)
-        self.G_sum = image_summary("G", self.G[:, 32, :, :])
+        self.G_sum = image_summary("G", self.G[:, 32, :, :][:, :, :, None])
 
         def sigmoid_cross_entropy_with_logits(x, y):
             try:
