@@ -157,7 +157,7 @@ class SDFGAN(object):
             [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
         self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
-        sample_z = np.random.uniform(0, 1, size=(self.sample_num, self.z_dim))
+        sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim))
 
         sample_files = data[0:self.sample_num]
         sample = [np.load(sample_file)[0, :, :, :] for sample_file in sample_files]
@@ -188,7 +188,7 @@ class SDFGAN(object):
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32)[:, :, :, :, None]
 
-                batch_z = np.random.uniform(0, 1, [config.batch_size, self.z_dim]) \
+                batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                     .astype(np.float32)
 
                 # Update D network if accuracy in last batch <= 80%
@@ -216,14 +216,11 @@ class SDFGAN(object):
                 errG = self.g_loss.eval({self.z: batch_z})
 
                 counter += 1
-                # print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
-                #       % (epoch, idx, batch_idxs,
-                #          time.time() - start_time, errD_fake + errD_real, errG))
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" \
                       % (epoch, idx, batch_idxs,
                          time.time() - start_time, errD_fake + errD_real, errG, d_accu_last_batch))
 
-                if np.mod(counter, 100) == 1:
+                if np.mod(counter, 200) == 1:
                     try:
                         samples, d_loss, g_loss = self.sess.run(
                             [self.sampler, self.d_loss, self.g_loss],
@@ -232,12 +229,7 @@ class SDFGAN(object):
                                 self.inputs: sample_inputs,
                             },
                         )
-                        # manifold_h = int(np.ceil(np.sqrt(samples.shape[0])))        ######### ???? ##########
-                        # manifold_w = int(np.floor(np.sqrt(samples.shape[0])))
-                        # save_images(samples, [manifold_h, manifold_w],
-                        #             './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-                        np.save('./{}/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
-                        # print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                        np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
                         print("[Sample] d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" % (d_loss, g_loss, d_accu_last_batch))
                     except:
                         print("Error when saving samples.")
@@ -289,7 +281,7 @@ class SDFGAN(object):
             h4, self.h4_w, self.h4_b = deconv3d(
                 h3, [self.batch_size, s_d, s_h, s_w, self.c_dim], name='g_h4', with_w=True)
 
-            return tf.nn.sigmoid(h4)
+            return tf.nn.tanh(h4)
 
     def sampler(self, z):
         with tf.variable_scope("generator") as scope:
@@ -318,7 +310,7 @@ class SDFGAN(object):
 
             h4 = deconv3d(h3, [self.batch_size, s_d, s_h, s_w, self.c_dim], name='g_h4')
 
-            return tf.nn.sigmoid(h4)
+            return tf.nn.tanh(h4)
 
     @property
     def model_dir(self):
