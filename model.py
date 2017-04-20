@@ -234,7 +234,7 @@ class SDFGAN(object):
                     except:
                         print("Error when saving samples.")
 
-                if np.mod(counter, 500) == 2:
+                if np.mod(counter, 200) == 2:
                     self.save(config.checkpoint_dir, counter)
 
     def discriminator(self, image, reuse=False):
