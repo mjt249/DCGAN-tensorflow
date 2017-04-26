@@ -142,10 +142,12 @@ class SDFGAN(object):
         data = glob(os.path.join(self.dataset_dir, config.dataset, self.input_fname_pattern))
         np.random.shuffle(data)
 
+        counter = tf.contrib.framework.get_or_create_global_step()
+
         d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
-            .minimize(self.d_loss, var_list=self.d_vars)
+            .minimize(self.d_loss, var_list=self.d_vars, global_step=counter)
         g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
-            .minimize(self.g_loss, var_list=self.g_vars)
+            .minimize(self.g_loss, var_list=self.g_vars, global_step=counter)
         try:
             tf.global_variables_initializer().run()
         except:
@@ -167,22 +169,26 @@ class SDFGAN(object):
         else:
             sample_inputs = np.array(sample).astype(np.float32)
 
-        counter = 1
+
         start_time = time.time()
-        could_load, checkpoint_counter = self.load(self.checkpoint_dir)
-        if could_load:
-            counter = checkpoint_counter
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
+        #could_load, checkpoint_counter = self.load(self.checkpoint_dir)
+        # if could_load:
+        #     counter = checkpoint_counter
+        #     print(" [*] Load SUCCESS")
+        # else:
+        #     print(" [!] Load failed...")
 
         d_accu_last_batch = .5
         for epoch in xrange(config.epoch):
+
             data = glob(os.path.join(
                 self.dataset_dir, config.dataset, self.input_fname_pattern))
             batch_idxs = min(len(data), config.train_size) // config.batch_size
 
             for idx in xrange(0, batch_idxs):
+                if self.sess.should_stop():
+                    return
+
                 batch_files = data[idx * config.batch_size:(idx + 1) * config.batch_size]
                 batch = [
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
@@ -191,17 +197,20 @@ class SDFGAN(object):
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                     .astype(np.float32)
 
+                # update the global step
+                s = self.sess.run(counter)
+
                 # Update D network if accuracy in last batch <= 80%
                 if d_accu_last_batch < .8:
                     # Update D network
                     _, summary_str = self.sess.run([d_optim, self.d_sum],
                                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
-                    self.writer.add_summary(summary_str, counter)
+                    self.writer.add_summary(summary_str, s)
 
                 # Update G network
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
                                                feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, counter)
+                self.writer.add_summary(summary_str, s)
 
                 # Update last batch accuracy
                 d_accu_last_batch = self.sess.run([self.d_accu],
@@ -215,12 +224,11 @@ class SDFGAN(object):
                 errD_real = self.d_loss_real.eval({self.inputs: batch_images})
                 errG = self.g_loss.eval({self.z: batch_z})
 
-                counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" \
                       % (epoch, idx, batch_idxs,
                          time.time() - start_time, errD_fake + errD_real, errG, d_accu_last_batch))
 
-                if np.mod(counter, 200) == 1:
+                if np.mod(s, 200) == 1:
                     try:
                         samples, d_loss, g_loss = self.sess.run(
                             [self.sampler, self.d_loss, self.g_loss],
@@ -229,13 +237,13 @@ class SDFGAN(object):
                                 self.inputs: sample_inputs,
                             },
                         )
-                        np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
+                        #np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
                         print("[Sample] d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" % (d_loss, g_loss, d_accu_last_batch))
                     except:
                         print("Error when saving samples.")
 
-                if np.mod(counter, 200) == 2:
-                    self.save(config.checkpoint_dir, counter)
+                #if np.mod(s, 200) == 2:
+                #    self.save(config.checkpoint_dir, counter)
 
     def discriminator(self, image, reuse=False):
         with tf.variable_scope("discriminator") as scope:

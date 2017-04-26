@@ -1,0 +1,13 @@
+#!/bin/bash -l
+#SBATCH -p gpu
+#SBATCH -t 00:30:00
+#SBATCH -N 2
+#SBATCH -n 2
+#SBATCH -o job_files/train.latest.stdout
+#SBATCH -e job_files/train.latest.stdout
+
+module reset
+module load gcc/4.9.1 cuda/8.0 cudnn/5.1 python/2.7.12 tensorflow-gpu/1.0.0
+
+ibrun bash test_script.sh
+#python main.py --dataset /work/04689/tg839883/maverick/shared/synset_02691156 --input_height=108 --is_train --is_crop True --checkpoint_dir $WORK/dcgan

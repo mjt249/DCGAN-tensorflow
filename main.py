@@ -1,6 +1,11 @@
 import os
 import scipy.misc
 import numpy as np
+from mpi4py import MPI
+import sys
+import socket
+import os.path
+
 
 from model import SDFGAN
 from utils import pp, show_all_variables, create_samples
@@ -59,34 +64,79 @@ def main(_):
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
 
-    with tf.Session(config=run_config) as sess:
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
-        sdfgan = SDFGAN(
-            sess,
-            input_depth=FLAGS.input_depth,
-            input_width=FLAGS.input_width,
-            input_height=FLAGS.input_height,
-            output_depth=FLAGS.output_depth,
-            output_width=FLAGS.output_width,
-            output_height=FLAGS.output_height,
-            batch_size=FLAGS.batch_size,
-            sample_num=FLAGS.batch_size,
-            c_dim=FLAGS.c_dim,
-            dataset_name=FLAGS.dataset,
-            input_fname_pattern=FLAGS.input_fname_pattern,
-            is_crop=FLAGS.is_crop,
-            checkpoint_dir=FLAGS.checkpoint_dir,
-            dataset_dir=FLAGS.dataset_dir,
-            log_dir=FLAGS.log_dir,
-            sample_dir=FLAGS.sample_dir)
+    my_ip = socket.gethostbyname(socket.gethostname())
+    addresses = [my_ip] * 2
+    result = comm.alltoall(addresses)
+    cluster = tf.train.ClusterSpec({
+        "worker": [
+            result[1] + ":2222"
+        ],
+        "ps": [
+            result[0] + ":2222"
+        ]})
 
-        show_all_variables()
-        if FLAGS.is_train:
-            sdfgan.train(FLAGS)
-        else:
-            if not sdfgan.load(FLAGS.checkpoint_dir):
-                raise Exception("[!] Train a model first, then run test mode")
-            create_samples(sess, sdfgan, FLAGS)
+    print result
+    job_name = 'ps' if rank == 0 else 'worker'
+    task_index = 0
+    server = tf.train.Server(cluster,
+                             job_name=job_name,
+                             task_index=task_index)
+    if job_name == "ps":
+        server.join()
+    elif job_name == "worker":
+
+        # Assigns ops to the local worker by default.
+        with tf.device(tf.train.replica_device_setter(
+                worker_device="/job:worker/task:0",
+                cluster=cluster)):
+
+            # Build model...
+
+            # The StopAtStepHook handles stopping after running given steps.
+            #hooks = [tf.train.StopAtStepHook(last_step=1000000)]
+
+            # The MonitoredTrainingSession takes care of session initialization,
+            # restoring from a checkpoint, saving to a checkpoint, and closing when done
+            # or an error occurs.
+            with tf.train.MonitoredTrainingSession(master=server.target,
+                                                   is_chief=(task_index == 0),
+                                                   checkpoint_dir=os.path.join(FLAGS.checkpoint_dir, "worker_" + str(task_index))) as sess:
+
+
+                #with tf.Session(config=run_config) as sess:
+                sdfgan = SDFGAN(
+                    sess,
+                    input_depth=FLAGS.input_depth,
+                    input_width=FLAGS.input_width,
+                    input_height=FLAGS.input_height,
+                    output_depth=FLAGS.output_depth,
+                    output_width=FLAGS.output_width,
+                    output_height=FLAGS.output_height,
+                    batch_size=FLAGS.batch_size,
+                    sample_num=FLAGS.batch_size,
+                    c_dim=FLAGS.c_dim,
+                    dataset_name=FLAGS.dataset,
+                    input_fname_pattern=FLAGS.input_fname_pattern,
+                    is_crop=FLAGS.is_crop,
+                    checkpoint_dir=FLAGS.checkpoint_dir,
+                    dataset_dir=FLAGS.dataset_dir,
+                    log_dir=FLAGS.log_dir,
+                    sample_dir=FLAGS.sample_dir)
+
+
+                show_all_variables()
+                if FLAGS.is_train:
+                    sdfgan.train(FLAGS)
+                else:
+                    if not sdfgan.load(FLAGS.checkpoint_dir):
+                        raise Exception("[!] Train a model first, then run test mode")
+                    create_samples(sess, sdfgan, FLAGS)
+
+
+
 
         # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
         #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
