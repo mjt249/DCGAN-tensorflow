@@ -92,48 +92,43 @@ def main(_):
         with tf.device(tf.train.replica_device_setter(
                 worker_device="/job:worker/task:0",
                 cluster=cluster)):
-
             # Build model...
+            sdfgan = SDFGAN(FLAGS,
+                input_depth=FLAGS.input_depth,
+                input_width=FLAGS.input_width,
+                input_height=FLAGS.input_height,
+                output_depth=FLAGS.output_depth,
+                output_width=FLAGS.output_width,
+                output_height=FLAGS.output_height,
+                batch_size=FLAGS.batch_size,
+                sample_num=FLAGS.batch_size,
+                c_dim=FLAGS.c_dim,
+                dataset_name=FLAGS.dataset,
+                input_fname_pattern=FLAGS.input_fname_pattern,
+                is_crop=FLAGS.is_crop,
+                checkpoint_dir=FLAGS.checkpoint_dir,
+                dataset_dir=FLAGS.dataset_dir,
+                log_dir=FLAGS.log_dir,
+                sample_dir=FLAGS.sample_dir)
+
 
             # The StopAtStepHook handles stopping after running given steps.
-            #hooks = [tf.train.StopAtStepHook(last_step=1000000)]
+            hooks = [tf.train.StopAtStepHook(last_step=1000000)]
 
-            # The MonitoredTrainingSession takes care of session initialization,
-            # restoring from a checkpoint, saving to a checkpoint, and closing when done
-            # or an error occurs.
-            with tf.train.MonitoredTrainingSession(master=server.target,
-                                                   is_chief=(task_index == 0),
-                                                   checkpoint_dir=os.path.join(FLAGS.checkpoint_dir, "worker_" + str(task_index))) as sess:
+        # The MonitoredTrainingSession takes care of session initialization,
+        # restoring from a checkpoint, saving to a checkpoint, and closing when done
+        # or an error occurs.
+        with tf.train.MonitoredTrainingSession(master=server.target,
+                                               is_chief=(task_index == 0),
+                                               checkpoint_dir=os.path.join(FLAGS.checkpoint_dir, "worker_" + str(task_index)), hooks=hooks) as sess:
 
-
-                #with tf.Session(config=run_config) as sess:
-                sdfgan = SDFGAN(
-                    sess,
-                    input_depth=FLAGS.input_depth,
-                    input_width=FLAGS.input_width,
-                    input_height=FLAGS.input_height,
-                    output_depth=FLAGS.output_depth,
-                    output_width=FLAGS.output_width,
-                    output_height=FLAGS.output_height,
-                    batch_size=FLAGS.batch_size,
-                    sample_num=FLAGS.batch_size,
-                    c_dim=FLAGS.c_dim,
-                    dataset_name=FLAGS.dataset,
-                    input_fname_pattern=FLAGS.input_fname_pattern,
-                    is_crop=FLAGS.is_crop,
-                    checkpoint_dir=FLAGS.checkpoint_dir,
-                    dataset_dir=FLAGS.dataset_dir,
-                    log_dir=FLAGS.log_dir,
-                    sample_dir=FLAGS.sample_dir)
-
-
-                show_all_variables()
-                if FLAGS.is_train:
-                    sdfgan.train(FLAGS)
-                else:
-                    if not sdfgan.load(FLAGS.checkpoint_dir):
-                        raise Exception("[!] Train a model first, then run test mode")
-                    create_samples(sess, sdfgan, FLAGS)
+            show_all_variables()
+            if FLAGS.is_train:
+                sdfgan.train(FLAGS, sess)
+            else:
+                if not sdfgan.load(FLAGS.checkpoint_dir):
+                    raise Exception("[!] Train a model first, then run test mode")
+                create_samples(sess, sdfgan, FLAGS)
 
 
 

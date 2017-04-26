@@ -16,7 +16,7 @@ def conv_out_size_same(size, stride):
 
 
 class SDFGAN(object):
-    def __init__(self, sess, input_depth=64, input_height=64, input_width=64, is_crop=True,
+    def __init__(self, config, input_depth=64, input_height=64, input_width=64, is_crop=True,
                  batch_size=64, sample_num=64,
                  output_depth=64, output_height=64, output_width=64, z_dim=200, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='shapenet',
@@ -24,7 +24,6 @@ class SDFGAN(object):
         """
 
         Args:
-          sess: TensorFlow session
           batch_size: The size of batch. Should be specified before training.
           z_dim: (optional) Dimension of dim for Z. [100]
           gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
@@ -33,7 +32,6 @@ class SDFGAN(object):
           dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
           c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
         """
-        self.sess = sess
         self.is_crop = is_crop
         self.is_grayscale = (c_dim == 1)
 
@@ -74,9 +72,9 @@ class SDFGAN(object):
         self.dataset_dir = dataset_dir
         self.log_dir = log_dir
         self.sample_dir = sample_dir
-        self.build_model()
+        self.build_model(config)
 
-    def build_model(self):
+    def build_model(self, config):
 
         if self.is_crop:
             image_dims = [self.output_depth, self.output_height, self.output_width, self.c_dim]
@@ -129,37 +127,43 @@ class SDFGAN(object):
 
         self.g_loss_sum = scalar_summary("g_loss", self.g_loss)
         self.d_loss_sum = scalar_summary("d_loss", self.d_loss)
+        self.global_step = tf.contrib.framework.get_or_create_global_step()
+
 
         t_vars = tf.trainable_variables()
-
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
+        self.d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
+            .minimize(self.d_loss, var_list=self.d_vars, global_step=self.global_step)
+        self.g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
+            .minimize(self.g_loss, var_list=self.g_vars, global_step=self.global_step)
+
+
         self.saver = tf.train.Saver()
 
-    def train(self, config):
-        """Train SFDGAN"""
-        data = glob(os.path.join(self.dataset_dir, config.dataset, self.input_fname_pattern))
-        np.random.shuffle(data)
 
-        counter = tf.contrib.framework.get_or_create_global_step()
-
-        d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
-            .minimize(self.d_loss, var_list=self.d_vars, global_step=counter)
-        g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
-            .minimize(self.g_loss, var_list=self.g_vars, global_step=counter)
         try:
-            tf.global_variables_initializer().run()
+            self.global_initializer = tf.global_variables_initializer()
         except:
-            tf.initialize_all_variables().run()
+            self.global_initializer = tf.initialize_all_variables()
 
         self.g_sum = merge_summary([self.z_sum, self.d__sum,
                                     self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = merge_summary(
             [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
-        self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
+
+
+
+    def train(self, config, sess):
+        """Train SFDGAN"""
+        data = glob(os.path.join(self.dataset_dir, config.dataset, self.input_fname_pattern))
+        np.random.shuffle(data)
         sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim))
+
+
+
 
         sample_files = data[0:self.sample_num]
         sample = [np.load(sample_file)[0, :, :, :] for sample_file in sample_files]
@@ -169,11 +173,13 @@ class SDFGAN(object):
         else:
             sample_inputs = np.array(sample).astype(np.float32)
 
+        self.writer = SummaryWriter(self.log_dir, sess.graph)
+
 
         start_time = time.time()
-        #could_load, checkpoint_counter = self.load(self.checkpoint_dir)
+        #could_load, checkpoint_self.global_step = self.load(self.checkpoint_dir, sess)
         # if could_load:
-        #     counter = checkpoint_counter
+        #     self.global_step = checkpoint_self.global_step
         #     print(" [*] Load SUCCESS")
         # else:
         #     print(" [!] Load failed...")
@@ -186,7 +192,7 @@ class SDFGAN(object):
             batch_idxs = min(len(data), config.train_size) // config.batch_size
 
             for idx in xrange(0, batch_idxs):
-                if self.sess.should_stop():
+                if sess.should_stop():
                     return
 
                 batch_files = data[idx * config.batch_size:(idx + 1) * config.batch_size]
@@ -198,52 +204,57 @@ class SDFGAN(object):
                     .astype(np.float32)
 
                 # update the global step
-                s = self.sess.run(counter)
+                feed_dict_step = {self.inputs: batch_images, self.z: batch_z}
+
+                if epoch == 0 and idx == 0:
+                    sess.run(self.global_initializer, feed_dict=feed_dict_step)
+
+                step = sess.run(self.global_step, feed_dict=feed_dict_step)
 
                 # Update D network if accuracy in last batch <= 80%
                 if d_accu_last_batch < .8:
                     # Update D network
-                    _, summary_str = self.sess.run([d_optim, self.d_sum],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
-                    self.writer.add_summary(summary_str, s)
+                    _, summary_str = sess.run([self.d_optim, self.d_sum],
+                                              feed_dict=feed_dict_step)
+                    self.writer.add_summary(summary_str, step)
 
                 # Update G network
-                _, summary_str = self.sess.run([g_optim, self.g_sum],
+                _, summary_str = sess.run([self.g_optim, self.g_sum],
                                                feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, s)
+                self.writer.add_summary(summary_str, step)
 
                 # Update last batch accuracy
-                d_accu_last_batch = self.sess.run([self.d_accu],
-                                                  feed_dict={self.inputs: batch_images, self.z: batch_z})
+                d_accu_last_batch = sess.run([self.d_accu],
+                                             feed_dict=feed_dict_step)
                 d_accu_last_batch = d_accu_last_batch[0]
 
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                # _, summary_str = self.sess.run([g_optim, self.g_sum],
+                # _, summary_str = sess.run([g_optim, self.g_sum],
                 #                                feed_dict={self.z: batch_z})
-                errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                errD_real = self.d_loss_real.eval({self.inputs: batch_images})
-                errG = self.g_loss.eval({self.z: batch_z})
+                errD_fake = self.d_loss_fake.eval({self.z: batch_z}, session=sess)
+                errD_real = self.d_loss_real.eval({self.inputs: batch_images}, session=sess)
+                errG = self.g_loss.eval({self.z: batch_z}, session=sess)
 
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" \
                       % (epoch, idx, batch_idxs,
                          time.time() - start_time, errD_fake + errD_real, errG, d_accu_last_batch))
 
-                if np.mod(s, 200) == 1:
+                if np.mod(step, 200) == 1:
                     try:
-                        samples, d_loss, g_loss = self.sess.run(
+                        samples, d_loss, g_loss = sess.run(
                             [self.sampler, self.d_loss, self.g_loss],
                             feed_dict={
                                 self.z: sample_z,
                                 self.inputs: sample_inputs,
                             },
                         )
-                        #np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples)
+                        #np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples, sess)
                         print("[Sample] d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" % (d_loss, g_loss, d_accu_last_batch))
                     except:
                         print("Error when saving samples.")
 
                 #if np.mod(s, 200) == 2:
-                #    self.save(config.checkpoint_dir, counter)
+                #    self.save(config.checkpoint_dir, self.global_step, sess)
 
     def discriminator(self, image, reuse=False):
         with tf.variable_scope("discriminator") as scope:
@@ -326,18 +337,18 @@ class SDFGAN(object):
             self.dataset_name, self.batch_size,
             self.output_depth, self.output_height, self.output_width)
 
-    def save(self, checkpoint_dir, step):
+    def save(self, checkpoint_dir, step, sess):
         model_name = "SDFGAN.model"
         checkpoint_dir = os.path.join(checkpoint_dir, self.model_dir)
 
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,
+        self.saver.save(sess,
                         os.path.join(checkpoint_dir, model_name),
                         global_step=step)
 
-    def load(self, checkpoint_dir):
+    def load(self, checkpoint_dir, sess):
         import re
         print(" [*] Reading checkpoints...")
         checkpoint_dir = os.path.join(checkpoint_dir, self.model_dir)
@@ -345,7 +356,7 @@ class SDFGAN(object):
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-            self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+            self.saver.restore(sess, os.path.join(checkpoint_dir, ckpt_name))
             counter = int(next(re.finditer("(\d+)(?!.*\d)", ckpt_name)).group(0))
             print(" [*] Success to read {}".format(ckpt_name))
             return True, counter
