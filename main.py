@@ -1,7 +1,6 @@
 import os
 import scipy.misc
 import numpy as np
-from mpi4py import MPI
 import sys
 import socket
 import os.path
@@ -32,13 +31,15 @@ flags.DEFINE_integer("output_width", None,
 flags.DEFINE_integer("c_dim", 1, "Dimension of sdf. [1]")
 flags.DEFINE_string("dataset", "shapenet", "The name of dataset [shapenet]")
 flags.DEFINE_string("input_fname_pattern", "*.npy", "Glob pattern of filename of input sdf [*]")
-flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
+flags.DEFINE_string("checkpoint_dir", None, "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("dataset_dir", "data", "Directory name to read the input training data [data]")
 flags.DEFINE_string("log_dir", "logs", "Directory name to save the log files [logs]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
+flags.DEFINE_string("job_name", None, "ps or worker")
+flags.DEFINE_integer("task_index", None, "the id of the task")
 FLAGS = flags.FLAGS
 
 
@@ -60,27 +61,34 @@ def main(_):
     if not os.path.exists(FLAGS.sample_dir):
         os.makedirs(FLAGS.sample_dir)
 
+
+
     # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    if FLAGS.job_name == None:
+        raise ValueError("invalid job_name argument")
 
-    my_ip = socket.gethostbyname(socket.gethostname())
-    addresses = [my_ip] * 2
-    result = comm.alltoall(addresses)
+    if FLAGS.task_index == None:
+        raise ValueError("invalid task_index argument")
+
+    if FLAGS.checkpoint_dir == None:
+        raise ValueError("invalid checkpoint_dir argument")
+
     cluster = tf.train.ClusterSpec({
         "worker": [
-            result[1] + ":2222"
+            "localhost:2220",
+            "localhost:2221",
+            "localhost:2222",
+            "localhost:2223"
         ],
         "ps": [
-            result[0] + ":2222"
+            "localhost:3333"
         ]})
 
-    print result
-    job_name = 'ps' if rank == 0 else 'worker'
-    task_index = 0
+    job_name = FLAGS.job_name
+    task_index = FLAGS.task_index
     server = tf.train.Server(cluster,
                              job_name=job_name,
                              task_index=task_index)
@@ -90,7 +98,7 @@ def main(_):
 
         # Assigns ops to the local worker by default.
         with tf.device(tf.train.replica_device_setter(
-                worker_device="/job:worker/task:0",
+                worker_device="/job:worker/task:" + str(task_index),
                 cluster=cluster)):
             # Build model...
             sdfgan = SDFGAN(FLAGS,
@@ -126,9 +134,10 @@ def main(_):
             if FLAGS.is_train:
                 sdfgan.train(FLAGS, sess)
             else:
-                if not sdfgan.load(FLAGS.checkpoint_dir):
-                    raise Exception("[!] Train a model first, then run test mode")
-                create_samples(sess, sdfgan, FLAGS)
+                raise ValueError("Needs to be in training mode for parallel training branch.")
+                # if not sdfgan.load(FLAGS.checkpoint_dir):
+                #     raise Exception("[!] Train a model first, then run test mode")
+                # create_samples(sess, sdfgan, FLAGS)
 
 
 
