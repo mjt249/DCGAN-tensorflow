@@ -89,12 +89,14 @@ def main(_):
 
     job_name = FLAGS.job_name
     task_index = FLAGS.task_index
+
     server = tf.train.Server(cluster,
                              job_name=job_name,
                              task_index=task_index)
     if job_name == "ps":
         server.join()
     elif job_name == "worker":
+        checkpoint_dir_combined = os.path.join(FLAGS.checkpoint_dir, "worker_" + str(task_index))
 
         # Assigns ops to the local worker by default.
         with tf.device(tf.train.replica_device_setter(
@@ -114,28 +116,25 @@ def main(_):
                 dataset_name=FLAGS.dataset,
                 input_fname_pattern=FLAGS.input_fname_pattern,
                 is_crop=FLAGS.is_crop,
-                checkpoint_dir=FLAGS.checkpoint_dir,
+                checkpoint_dir=checkpoint_dir_combined,
                 dataset_dir=FLAGS.dataset_dir,
                 log_dir=FLAGS.log_dir,
                 sample_dir=FLAGS.sample_dir)
 
-
-            # The StopAtStepHook handles stopping after running given steps.
-            hooks = [tf.train.StopAtStepHook(last_step=1000000)]
 
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
         with tf.train.MonitoredTrainingSession(master=server.target,
                                                is_chief=(task_index == 0),
-                                               checkpoint_dir=os.path.join(FLAGS.checkpoint_dir, "worker_" + str(task_index)), hooks=hooks) as sess:
+                                               checkpoint_dir=checkpoint_dir_combined) as sess:
 
             show_all_variables()
             if FLAGS.is_train:
                 sdfgan.train(FLAGS, sess)
             else:
                 raise ValueError("Needs to be in training mode for parallel training branch.")
-                # if not sdfgan.load(FLAGS.checkpoint_dir):
+                # if not sdfgan.load(checkpoint_dir_combined):
                 #     raise Exception("[!] Train a model first, then run test mode")
                 # create_samples(sess, sdfgan, FLAGS)
 

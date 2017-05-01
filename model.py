@@ -177,6 +177,7 @@ class SDFGAN(object):
 
 
         start_time = time.time()
+
         #could_load, checkpoint_self.global_step = self.load(self.checkpoint_dir, sess)
         # if could_load:
         #     self.global_step = checkpoint_self.global_step
