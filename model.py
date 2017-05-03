@@ -311,6 +311,54 @@ class SDFGAN(object):
             h4 = deconv3d(h3, [self.batch_size, s_d, s_h, s_w, self.c_dim], name='g_h4')
 
             return tf.nn.tanh(h4)
+        
+# Modules for classifier
+    def buid_classifier(self):
+        
+    def discrim_features(self, image):
+        with tf.variable_scope("discriminator") as scope:
+            scope.reuse_variables()
+
+            h0 = lrelu(conv3d(image, self.df_dim, name='d_h0_conv'))
+            h1 = lrelu(self.d_bn1(conv3d(h0, self.df_dim * 2, name='d_h1_conv')))
+            h2 = lrelu(self.d_bn2(conv3d(h1, self.df_dim * 4, name='d_h2_conv')))
+            h3 = lrelu(self.d_bn3(conv3d(h2, self.df_dim * 8, name='d_h3_conv')))
+            
+            return tf.reshape(h3, [self.batch_size, -1])
+    
+    def train_classifier(self, config):
+        """Train classifier for another dataset (ModelNet10) based on discriminator features"""
+        
+        # read data
+        if config.classification_dataset == 'ModelNet10' or config.classification_dataset == 'ModelNet40':
+            data_classes = glob(os.path.join(self.dataset_dir, config.dataset)+'/*/')
+        else:
+            raise Exception('only implemented classification for ModelNet10 and ModelNet40.')
+        train_f = [glob(os.path.join(c, 'train', 'input_fname_pattern')) for c in data_classes]
+        test_f = [glob(os.path.join(c, 'test', 'input_fname_pattern')) for c in data_classes]
+        train_files, train_lables, test_files, test_labels= [], [], [], []
+        for num, t_f in enumerate(train_f):
+            train_files += t_f
+            train_labels += num * np.ones([len(t_f)])
+        train_lables = np.concatenate(train_labels)
+        for t_f in test_f:
+            test_files += t_f
+            test_labels += num * np.ones([len(t_f)])
+        test_labels = np.concatenate(test_labels)
+        label_names = [os.path.basename(c[:-1]) for c in data_classes]
+        
+        # shuffle data
+        rand_seq = np.random.shuffle(np.arange(len(train_files)))
+        train_files, train_labels = train_files[rand_seq], train_lables[rand_seq]
+
+        d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
+            .minimize(self.d_loss, var_list=self.d_vars)
+        g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
+            .minimize(self.g_loss, var_list=self.g_vars)
+        try:
+            tf.global_variables_initializer().run()
+        except:
+            tf.initialize_all_variables().run()
 
     @property
     def model_dir(self):
