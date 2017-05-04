@@ -34,6 +34,12 @@ flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image s
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
+# classifier flags
+flags.DEFINE_boolean("is_classifier", False, "True for classifier, false for GAN [False]")
+flags.DEFINE_integer("classifier_epoch", 25, "Epoch to train classifier [25]")
+flags.DEFINE_float("c_learning_rate", 0.001, "Learning rate for classifier [1e-3]")
+
+
 FLAGS = flags.FLAGS
 
 
@@ -78,26 +84,20 @@ def main(_):
             checkpoint_dir=FLAGS.checkpoint_dir,
             dataset_dir=FLAGS.dataset_dir,
             log_dir=FLAGS.log_dir,
-            sample_dir=FLAGS.sample_dir)
+            sample_dir=FLAGS.sample_dir,
+            classifier_epoch=FLAGS.classifier_epoch)
 
         show_all_variables()
-        if FLAGS.is_train:
-            sdfgan.train(FLAGS)
-        else:
-            if not sdfgan.load(FLAGS.checkpoint_dir):
-                raise Exception("[!] Train a model first, then run test mode")
-            create_samples(sess, sdfgan, FLAGS)
-
-        # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
-        #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
-        #                 [dcgan.h2_w, dcgan.h2_b, dcgan.g_bn2],
-        #                 [dcgan.h3_w, dcgan.h3_b, dcgan.g_bn3],
-        #                 [dcgan.h4_w, dcgan.h4_b, None])
-
-        # Below is codes for visualization
-        # OPTION = 1
-        # visualize(sess, sdfgan, FLAGS, OPTION)
-
+        if not FLAGS.is_classifier:  # GAN
+            if FLAGS.is_train:
+                sdfgan.train(FLAGS)
+            else:
+                if not sdfgan.load(FLAGS.checkpoint_dir):
+                    raise Exception("[!] Train a model first, then run test mode")
+                create_samples(sess, sdfgan, FLAGS)
+        else:  # classifier
+            sdfgan.build_classifier()
+            sdfgan.train_classifier(FLAGS)
 
 if __name__ == '__main__':
     tf.app.run()
