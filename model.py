@@ -86,6 +86,7 @@ class SDFGAN(object):
         else:
             image_dims = [self.output_depth, self.input_height, self.input_width, self.c_dim]
 
+        self.n_class = 
         self.inputs = tf.placeholder(
             tf.float32, [self.batch_size] + image_dims, name='real_images')
         self.sample_inputs = tf.placeholder(
@@ -316,12 +317,12 @@ class SDFGAN(object):
             return tf.nn.tanh(h4)
         
 # Modules for classifier
-    def build_classifier(self):
+    def build_classifier(self, config):
         if self.is_crop:
             image_dims = [self.output_depth, self.output_height, self.output_width, self.c_dim]
         else:
             image_dims = [self.output_depth, self.input_height, self.input_width, self.c_dim]
-
+        self.n_class = int(config.dataset[-2:])
         self.ct_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='classifier_train_inputs')
         self.ct_labels = tf.placeholder(tf.int64, [self.batch_size], name='classifier_train_labels')
         self.C, self.C_logits = self.classifier(self.ct_inputs)
@@ -465,8 +466,6 @@ class SDFGAN(object):
         rand_seq = tf.random_shuffle(rand_seq, seed=self.seed)
         train_files = [train_files[ind] for ind in rand_seq]
         train_labels = tf.gather(train_labels, rand_seq)
-
-        self.n_class = len(label_names)
 
         return train_files, train_labels, test_files, test_labels
 
