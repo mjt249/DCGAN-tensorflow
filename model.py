@@ -328,10 +328,11 @@ class SDFGAN(object):
         self.C, self.C_logits = self.classifier(self.ct_inputs)
 
         def sigmoid_cross_entropy_with_logits(x, y):
-            try:
-                return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=y)
-            except:
-                return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, targets=y)
+            return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=y)
+            # try:
+            #     return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=y)
+            # except:
+            #     return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, targets=y)
 
         self.c_loss = tf.reduce_mean(
             sigmoid_cross_entropy_with_logits(self.C_logits, self.ct_labels))
