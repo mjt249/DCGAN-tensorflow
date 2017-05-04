@@ -86,7 +86,6 @@ class SDFGAN(object):
         else:
             image_dims = [self.output_depth, self.input_height, self.input_width, self.c_dim]
 
-        self.n_class = 
         self.inputs = tf.placeholder(
             tf.float32, [self.batch_size] + image_dims, name='real_images')
         self.sample_inputs = tf.placeholder(
@@ -322,6 +321,7 @@ class SDFGAN(object):
             image_dims = [self.output_depth, self.output_height, self.output_width, self.c_dim]
         else:
             image_dims = [self.output_depth, self.input_height, self.input_width, self.c_dim]
+
         self.n_class = int(config.dataset[-2:])
         self.ct_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='classifier_train_inputs')
         self.ct_labels = tf.placeholder(tf.int64, [self.batch_size], name='classifier_train_labels')
