@@ -96,7 +96,7 @@ def main(_):
                     raise Exception("[!] Train a model first, then run test mode")
                 create_samples(sess, sdfgan, FLAGS)
         else:  # classifier
-            sdfgan.build_classifier()
+            sdfgan.build_classifier(FLAGS)
             sdfgan.train_classifier(FLAGS)
 
 if __name__ == '__main__':
