@@ -140,6 +140,10 @@ class SDFGAN(object):
         self.g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
             .minimize(self.g_loss, var_list=self.g_vars, global_step=self.global_step)
 
+        # self.d_rep_opt = tf.SyncReplicasOptimizer(self.d_optim, replicas_to_aggregate=4,
+        #                        total_num_replicas=4)
+        # self.g_rep_opt = tf.SyncReplicasOptimizer(self.g_optim, replicas_to_aggregate=4,
+        #                        total_num_replicas=4)
 
         self.saver = tf.train.Saver()
 
@@ -169,8 +173,8 @@ class SDFGAN(object):
         sample_files = data[0:self.sample_num]
         sample = [np.load(sample_file)[0, :, :, :] for sample_file in sample_files]
         if (self.is_grayscale):
-            # sample_inputs = np.array(sample).astype(np.float32)[:, :, :, :, None]
-            sample_inputs = np.array(sample).astype(np.float32)
+            sample_inputs = np.array(sample).astype(np.float32)[:, :, :, :, None]
+            #sample_inputs = np.array(sample).astype(np.float32)
         else:
             sample_inputs = np.array(sample).astype(np.float32)
 
@@ -198,6 +202,10 @@ class SDFGAN(object):
                     return
 
                 batch_files = data[idx * config.batch_size:(idx + 1) * config.batch_size]
+                #todo Remove below
+                for batch_file in batch_files:
+                    print batch_file
+
                 batch = [
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32)[:, :, :, :, None]
@@ -223,7 +231,7 @@ class SDFGAN(object):
 
                 # Update G network
                 _, summary_str = sess.run([self.g_optim, self.g_sum],
-                                               feed_dict={self.z: batch_z})
+                                               feed_dict=feed_dict_step)
 
                 if config.task_index == 0:
                     self.writer.add_summary(summary_str, step)
@@ -253,9 +261,10 @@ class SDFGAN(object):
                                 self.inputs: sample_inputs,
                             },
                         )
-                        #np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples, sess)
+                        np.save(self.sample_dir+'/train_{:02d}_{:04d}.npy'.format(config.sample_dir, epoch, idx), samples, sess)
                         print("[Sample] d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" % (d_loss, g_loss, d_accu_last_batch))
-                    except:
+                    except Exception as e:
+                        print(e)
                         print("Error when saving samples.")
 
                 #if np.mod(s, 200) == 2:
