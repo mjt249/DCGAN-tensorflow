@@ -338,7 +338,7 @@ class SDFGAN(object):
         self.c_loss = tf.reduce_mean(
             sigmoid_cross_entropy_with_logits(self.C_logits, self.ct_labels_onehot))
         self.c_loss_sum = scalar_summary("c_loss", self.c_loss)
-        self.c_accu = tf.reduce_sum(tf.cast(tf.equal(tf.argmax(self.C, axis=1), self.ct_labels), tf.float32)) \
+        self.c_accu = tf.reduce_sum(tf.cast(tf.equal(tf.argmax(self.C, axis=1), self.ct_labels), tf.int32)) \
                       / self.ct_labels.get_shape()[0]
         self.c_accu_sum = scalar_summary("c_accu", self.c_accu)
 
