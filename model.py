@@ -455,18 +455,18 @@ class SDFGAN(object):
         train_files, train_labels, test_files, test_labels = [], [], [], []
         for num, t_f in enumerate(train_f):
             train_files += t_f
-            train_labels += [num * tf.ones([len(t_f)], dtype=tf.int64)]
-        train_labels = tf.concat(train_labels, axis=0)
+            train_labels += [num * np.ones([len(t_f)], dtype=np.int64)]
+        train_labels = np.concatenate(train_labels, axis=0)
         for num, t_f in enumerate(test_f):
             test_files += t_f
-            test_labels += [num * tf.ones([len(t_f)], dtype=tf.int64)]
-        test_labels = tf.concat(test_labels, axis=0)
+            test_labels += [num * np.ones([len(t_f)], dtype=np.int64)]
+        test_labels = np.concatenate(test_labels, axis=0)
         label_names = [os.path.basename(c[:-1]) for c in data_classes]
 
         # shuffle training dataa
         rand_seq = np.random.permutation(len(train_files))
         train_files = [train_files[ind] for ind in rand_seq]
-        train_labels = tf.gather(train_labels, tf.constant(rand_seq))
+        train_labels = train_labels[rand_seq]
 
         return train_files, train_labels, test_files, test_labels
 
