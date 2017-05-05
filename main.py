@@ -80,8 +80,8 @@ def main(_):
         "worker": [
             "localhost:2220",
             "localhost:2221",
-            "localhost:2222",
-            "localhost:2223"
+            #"localhost:2222",
+            #"localhost:2223"
         ],
         "ps": [
             "localhost:3333"

@@ -71,6 +71,7 @@ class SDFGAN(object):
         self.checkpoint_dir = checkpoint_dir
         self.dataset_dir = dataset_dir
         self.log_dir = log_dir
+        self.config = config
         self.sample_dir = sample_dir
         self.build_model(config)
 
@@ -217,12 +218,15 @@ class SDFGAN(object):
                     # Update D network
                     _, summary_str = sess.run([self.d_optim, self.d_sum],
                                               feed_dict=feed_dict_step)
-                    self.writer.add_summary(summary_str, step)
+                    if config.task_index == 0:
+                        self.writer.add_summary(summary_str, step)
 
                 # Update G network
                 _, summary_str = sess.run([self.g_optim, self.g_sum],
                                                feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, step)
+
+                if config.task_index == 0:
+                    self.writer.add_summary(summary_str, step)
 
                 # Update last batch accuracy
                 d_accu_last_batch = sess.run([self.d_accu],
