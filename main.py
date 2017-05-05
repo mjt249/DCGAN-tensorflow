@@ -80,8 +80,8 @@ def main(_):
         "worker": [
             "localhost:2220",
             "localhost:2221",
-            #"localhost:2222",
-            #"localhost:2223"
+            "localhost:2222",
+            "localhost:2223"
         ],
         "ps": [
             "localhost:3333"
@@ -129,7 +129,8 @@ def main(_):
         # or an error occurs.
         with tf.train.MonitoredTrainingSession(master=server.target,
                                                is_chief=(task_index == 0),
-                                               checkpoint_dir=checkpoint_dir_combined) as sess:
+                                               checkpoint_dir=checkpoint_dir_combined,
+                                               hooks=[sdfgan.d_sync_replicas_hook, sdfgan.g_sync_replicas_hook]) as sess:
 
             show_all_variables()
             if FLAGS.is_train:

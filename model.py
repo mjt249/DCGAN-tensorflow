@@ -139,18 +139,17 @@ class SDFGAN(object):
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
         self.d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1)
-
         self.g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1)
 
-        self.d_optim = tf.SyncReplicasOptimizer(self.d_optim, replicas_to_aggregate=4,
-                                                total_num_replicas=4).minimize(self.d_loss, var_list=self.d_vars,
-                                                                               global_step=self.global_step)
-        self.g_optim = tf.SyncReplicasOptimizer(self.g_optim, replicas_to_aggregate=4,
-                                                total_num_replicas=4).minimize(self.g_loss, var_list=self.g_vars,
-                                                                               global_step=self.global_step)
+        self.d_optim = tf.train.SyncReplicasOptimizer(self.d_optim, replicas_to_aggregate=4, total_num_replicas=4)
+        self.g_optim = tf.train.SyncReplicasOptimizer(self.g_optim, replicas_to_aggregate=4, total_num_replicas=4)
 
         self.d_sync_replicas_hook = self.d_optim.make_session_run_hook(self.is_chief)
         self.g_sync_replicas_hook = self.g_optim.make_session_run_hook(self.is_chief)
+
+        self.d_optim = self.d_optim.minimize(self.d_loss, var_list=self.d_vars, global_step=self.global_step)
+        self.g_optim = self.g_optim.minimize(self.g_loss, var_list=self.g_vars, global_step=self.global_step)
+
 
         self.saver = tf.train.Saver()
 
@@ -209,9 +208,6 @@ class SDFGAN(object):
                     return
 
                 batch_files = data[idx * config.batch_size:(idx + 1) * config.batch_size]
-                #todo Remove below
-                for batch_file in batch_files:
-                    print batch_file
 
                 batch = [
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
