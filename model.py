@@ -59,6 +59,7 @@ class SDFGAN(object):
 
         self.c_dim = c_dim
         self.seed = seed
+        np.random.seed(seed=seed)
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -463,11 +464,10 @@ class SDFGAN(object):
         test_labels = tf.concat(test_labels, axis=0)
         label_names = [os.path.basename(c[:-1]) for c in data_classes]
 
-        # shuffle training data
-        rand_seq = tf.range(len(train_files))
-        rand_seq = tf.random_shuffle(rand_seq, seed=self.seed)
+        # shuffle training dataa
+        rand_seq = np.random.permutation(len(train_files))
         train_files = [train_files[ind] for ind in rand_seq]
-        train_labels = tf.gather(train_labels, rand_seq)
+        train_labels = tf.gather(train_labels, tf.constant(rand_seq))
 
         return train_files, train_labels, test_files, test_labels
 
