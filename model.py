@@ -325,6 +325,7 @@ class SDFGAN(object):
         self.n_class = int(config.dataset[-2:])
         self.ct_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='classifier_train_inputs')
         self.ct_labels = tf.placeholder(tf.int64, [self.batch_size], name='classifier_train_labels')
+        self.ct_labels_onehot = tf.one_hot(self.ct_labels, depth=self.n_class)
         self.C, self.C_logits = self.classifier(self.ct_inputs)
 
         def sigmoid_cross_entropy_with_logits(x, y):
@@ -335,7 +336,7 @@ class SDFGAN(object):
             #     return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, targets=y)
 
         self.c_loss = tf.reduce_mean(
-            sigmoid_cross_entropy_with_logits(self.C_logits, self.ct_labels))
+            sigmoid_cross_entropy_with_logits(self.C_logits, self.ct_labels_onehot))
         self.c_loss_sum = scalar_summary("c_loss", self.c_loss)
         self.c_accu = tf.reduce_sum(tf.equal(tf.argmax(self.C, axis=1), self.ct_labels)) \
                       / self.ct_labels.get_shape()[0]
