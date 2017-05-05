@@ -435,8 +435,8 @@ class SDFGAN(object):
             batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
             accu = self.c_accu.eval(feed_dict={self.ct_inputs: batch_inputs,
                                                self.ct_labels: batch_labels})
-            correct += int(accu*batch_labels.get_shape()[0])
-            total += int(batch_labels.get_shape()[0])
+            correct += int(accu*batch_labels.shape[0])
+            total += int(batch_labels.shape[0])
         final_accu = correct / total
 
         return final_accu
