@@ -446,7 +446,7 @@ class SDFGAN(object):
     def read_data(self, config):
         """Read data for classifier"""
         # read data
-        if config.classification_dataset == 'ModelNet10' or config.classification_dataset == 'ModelNet40':
+        if config.dataset == 'ModelNet10' or config.dataset == 'ModelNet40':
             data_classes = glob(os.path.join(self.dataset_dir, config.classification_dataset) + '/*/')
         else:
             raise Exception('only implemented classification for ModelNet10 and ModelNet40.')
