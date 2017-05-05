@@ -455,11 +455,11 @@ class SDFGAN(object):
         train_files, train_labels, test_files, test_labels = [], [], [], []
         for num, t_f in enumerate(train_f):
             train_files += t_f
-            train_labels += num * tf.ones([len(t_f)], dtype=tf.int64)
+            train_labels += [num * tf.ones([len(t_f)], dtype=tf.int64)]
         train_labels = tf.concat(train_labels, axis=0)
         for num, t_f in enumerate(test_f):
             test_files += t_f
-            test_labels += num * tf.ones([len(t_f)], dtype=tf.int64)
+            test_labels += [num * tf.ones([len(t_f)], dtype=tf.int64)]
         test_labels = tf.concat(test_labels, axis=0)
         label_names = [os.path.basename(c[:-1]) for c in data_classes]
 
