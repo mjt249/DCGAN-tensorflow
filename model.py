@@ -407,7 +407,7 @@ class SDFGAN(object):
                       % (c_epoch, idx, batch_idxs, time.time() - start_time, c_loss, mini_batch_accu))
 
                 # evaluate and print train/test set error on small sample
-                if np.mod(c_counter, 100) == 1:
+                if np.mod(c_counter, 5) == 1:
                     train_accu = self.eval_classifier(config, partition='train')
                     test_accu = self.eval_classifier(config, partition='test')
                     print("Accuracy: train_accu %.8f, test_accu %.8f." % (train_accu, test_accu))
@@ -432,7 +432,7 @@ class SDFGAN(object):
             batch_labels = labels[idx * config.batch_size:(idx + 1) * config.batch_size]
             batch = [
                 np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
-            batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, Nonea]
+            batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
             accu = self.c_accu.eval(feed_dict={self.ct_inputs: batch_inputs,
                                                self.ct_labels: batch_labels})
             correct += int(accu*batch_labels.get_shape()[0])
