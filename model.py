@@ -433,11 +433,11 @@ class SDFGAN(object):
             batch_labels = labels[idx * config.batch_size:(idx + 1) * config.batch_size]
             batch = [
                 np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
-            batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
+            batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, Nonea]
             accu = self.c_accu.eval(feed_dict={self.ct_inputs: batch_inputs,
                                                self.ct_labels: batch_labels})
             correct += int(accu*batch_labels.get_shape()[0])
-            total += batch_labels.get_shape()[0]
+            total += int(batch_labels.get_shape()[0])
         final_accu = correct / total
 
         return final_accu
