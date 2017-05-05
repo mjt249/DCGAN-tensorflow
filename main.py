@@ -38,6 +38,7 @@ flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothin
 flags.DEFINE_boolean("is_classifier", False, "True for classifier, false for GAN [False]")
 flags.DEFINE_integer("classifier_epoch", 25, "Epoch to train classifier [25]")
 flags.DEFINE_float("c_learning_rate", 0.001, "Learning rate for classifier [1e-3]")
+flags.DEFINE_string("classification_dataset", "ModelNet10", "classification dataset [ModelNet10]")
 
 
 FLAGS = flags.FLAGS

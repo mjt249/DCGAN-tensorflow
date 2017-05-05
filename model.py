@@ -322,7 +322,7 @@ class SDFGAN(object):
         else:
             image_dims = [self.output_depth, self.input_height, self.input_width, self.c_dim]
 
-        self.n_class = int(config.dataset[-2:])
+        self.n_class = int(config.classification_dataset[-2:])
         self.ct_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='classifier_train_inputs')
         self.ct_labels = tf.placeholder(tf.int64, [self.batch_size], name='classifier_train_labels')
         self.ct_labels_onehot = tf.one_hot(self.ct_labels, depth=self.n_class)
@@ -359,7 +359,7 @@ class SDFGAN(object):
             return tf.nn.sigmoid(h4), h4
     
     def train_classifier(self, config):
-        """Train classifier for another dataset (ModelNet10) based on discriminator features"""
+        """Train classifier for classification dataset (ModelNet10/40) based on discriminator features"""
         train_files, train_labels, test_files, test_labels = self.read_data(config)
         # define optimizing step
         c_optim = tf.train.AdamOptimizer(config.c_learning_rate, beta1=config.beta1) \
@@ -446,7 +446,7 @@ class SDFGAN(object):
     def read_data(self, config):
         """Read data for classifier"""
         # read data
-        if config.dataset == 'ModelNet10' or config.dataset == 'ModelNet40':
+        if config.classification_dataset == 'ModelNet10' or config.classification_dataset == 'ModelNet40':
             data_classes = glob(os.path.join(self.dataset_dir, config.classification_dataset) + '/*/')
         else:
             raise Exception('only implemented classification for ModelNet10 and ModelNet40.')
