@@ -6,7 +6,7 @@ from glob import glob
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
-
+from tqdm import tqdm
 from ops import *
 from utils import *
 
@@ -427,7 +427,7 @@ class SDFGAN(object):
 
         batch_idxs = len(files) // config.batch_size
         correct, total = 0, 0
-        for idx in xrange(0, batch_idxs):
+        for idx in tqdm(xrange(0, batch_idxs)):
             batch_files = files[idx * config.batch_size:(idx + 1) * config.batch_size]
             batch_labels = labels[idx * config.batch_size:(idx + 1) * config.batch_size]
             batch = [
