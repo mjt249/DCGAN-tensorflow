@@ -382,7 +382,6 @@ class SDFGAN(object):
         else:
             print(" [!] Load failed...")
 
-        d_accu_last_batch = .5
         for c_epoch in xrange(config.classifier_epoch):
             batch_idxs = min(len(train_files), config.train_size) // config.batch_size
 
@@ -451,8 +450,8 @@ class SDFGAN(object):
             data_classes = glob(os.path.join(self.dataset_dir, config.classification_dataset) + '/*/')
         else:
             raise Exception('only implemented classification for ModelNet10 and ModelNet40.')
-        train_f = [glob(os.path.join(c, 'train', 'input_fname_pattern')) for c in data_classes]
-        test_f = [glob(os.path.join(c, 'test', 'input_fname_pattern')) for c in data_classes]
+        train_f = [glob(os.path.join(c, 'train', config.input_fname_pattern)) for c in data_classes]
+        test_f = [glob(os.path.join(c, 'test', config.input_fname_pattern)) for c in data_classes]
         train_files, train_labels, test_files, test_labels = [], [], [], []
         for num, t_f in enumerate(train_f):
             train_files += t_f
