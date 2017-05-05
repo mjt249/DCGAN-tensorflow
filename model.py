@@ -407,7 +407,7 @@ class SDFGAN(object):
                       % (c_epoch, idx, batch_idxs, time.time() - start_time, c_loss, mini_batch_accu))
 
                 # evaluate and print train/test set error on small sample
-                if np.mod(c_counter, 5) == 1:
+                if np.mod(c_counter, 500) == 1:
                     train_accu = self.eval_classifier(config, partition='train')
                     test_accu = self.eval_classifier(config, partition='test')
                     print("Accuracy: train_accu %.8f, test_accu %.8f." % (train_accu, test_accu))
