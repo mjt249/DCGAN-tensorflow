@@ -382,9 +382,10 @@ class SDFGAN(object):
         else:
             print(" [!] Load failed...")
 
+        batch_idxs = min(len(train_files), config.train_size) // config.batch_size
+        total_steps = config.classifier_epoch * batch_idxs
+        prev_time = -np.inf
         for c_epoch in xrange(config.classifier_epoch):
-            batch_idxs = min(len(train_files), config.train_size) // config.batch_size
-
             for idx in xrange(0, batch_idxs):
                 batch_files = train_files[idx * config.batch_size:(idx + 1) * config.batch_size]
                 batch_labels = train_labels[idx * config.batch_size:(idx + 1) * config.batch_size]
@@ -400,15 +401,21 @@ class SDFGAN(object):
                 c_loss, mini_batch_accu = self.sess.run([self.c_loss, self.c_accu],
                                                         feed_dict={self.ct_inputs: batch_inputs,
                                                                    self.ct_labels: batch_labels})
-
+                now_time = time.time()
+                time_per_iter = now_time - prev_time
+                prev_time = now_time
+                eta = (total_steps - c_counter) * time_per_iter
                 c_counter += 1
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, c_loss: %.8f, minibatch_accu: %.8f"
-                      % (c_epoch, idx, batch_idxs, time.time() - start_time, c_loss, mini_batch_accu))
+
+                print("Epoch: [%2d] [%4d/%4d] sec/iter: %4.4f, eta: %4.4f mins, c_loss: %.8f, minibatch_accu: %.8f"
+                      % (c_epoch, idx, batch_idxs, time_per_iter, eta/60, c_loss, mini_batch_accu))
 
                 # evaluate and print train/test set error on small sample
                 if np.mod(c_counter, 500) == 1:
+                    print("Evaluating training set accuracy:")
                     train_accu = self.eval_classifier(config, partition='train')
+                    print("Evaluating test set accuracy:")
                     test_accu = self.eval_classifier(config, partition='test')
                     print("Accuracy: train_accu %.8f, test_accu %.8f." % (train_accu, test_accu))
 
