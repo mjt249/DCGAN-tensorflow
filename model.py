@@ -211,6 +211,7 @@ class SDFGAN(object):
 
                 batch = [
                     np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
+
                 batch_images = np.array(batch).astype(np.float32)[:, :, :, :, None]
 
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
@@ -218,6 +219,9 @@ class SDFGAN(object):
 
                 # update the global step
                 feed_dict_step = {self.inputs: batch_images, self.z: batch_z}
+                print("Shape for batch_images/self.inputs: ", np.shape(feed_dict_step[self.inputs]))
+                print("Shape for batch_z/self.z: ", np.shape(feed_dict_step[self.z]))
+
 
                 if epoch == 0 and idx == 0:
                     sess.run(self.global_initializer, feed_dict=feed_dict_step)
@@ -247,9 +251,9 @@ class SDFGAN(object):
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # _, summary_str = sess.run([g_optim, self.g_sum],
                 #                                feed_dict={self.z: batch_z})
-                errD_fake = self.d_loss_fake.eval({self.z: batch_z}, session=sess)
-                errD_real = self.d_loss_real.eval({self.inputs: batch_images}, session=sess)
-                errG = self.g_loss.eval({self.z: batch_z}, session=sess)
+                errD_fake = self.d_loss_fake.eval(feed_dict_step, session=sess)
+                errD_real = self.d_loss_real.eval(feed_dict_step, session=sess)
+                errG = self.g_loss.eval(feed_dict_step, session=sess)
 
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_accu: %.4f" \
                       % (epoch, idx, batch_idxs,
