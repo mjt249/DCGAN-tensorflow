@@ -16,7 +16,7 @@ def conv_out_size_same(size, stride):
 
 
 class SDFGAN(object):
-    def __init__(self, config, input_depth=64, input_height=64, input_width=64, is_crop=True,
+    def __init__(self, config, is_chief, input_depth=64, input_height=64, input_width=64, is_crop=True,
                  batch_size=64, sample_num=64,
                  output_depth=64, output_height=64, output_width=64, z_dim=200, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='shapenet',
@@ -73,7 +73,10 @@ class SDFGAN(object):
         self.log_dir = log_dir
         self.config = config
         self.sample_dir = sample_dir
+        self.is_chief = is_chief
         self.build_model(config)
+
+
 
     def build_model(self, config):
 
@@ -135,15 +138,19 @@ class SDFGAN(object):
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
-        self.d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1) \
-            .minimize(self.d_loss, var_list=self.d_vars, global_step=self.global_step)
-        self.g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1) \
-            .minimize(self.g_loss, var_list=self.g_vars, global_step=self.global_step)
+        self.d_optim = tf.train.AdamOptimizer(config.d_learning_rate, beta1=config.beta1)
 
-        # self.d_rep_opt = tf.SyncReplicasOptimizer(self.d_optim, replicas_to_aggregate=4,
-        #                        total_num_replicas=4)
-        # self.g_rep_opt = tf.SyncReplicasOptimizer(self.g_optim, replicas_to_aggregate=4,
-        #                        total_num_replicas=4)
+        self.g_optim = tf.train.AdamOptimizer(config.g_learning_rate, beta1=config.beta1)
+
+        self.d_optim = tf.SyncReplicasOptimizer(self.d_optim, replicas_to_aggregate=4,
+                                                total_num_replicas=4).minimize(self.d_loss, var_list=self.d_vars,
+                                                                               global_step=self.global_step)
+        self.g_optim = tf.SyncReplicasOptimizer(self.g_optim, replicas_to_aggregate=4,
+                                                total_num_replicas=4).minimize(self.g_loss, var_list=self.g_vars,
+                                                                               global_step=self.global_step)
+
+        self.d_sync_replicas_hook = self.d_optim.make_session_run_hook(self.is_chief)
+        self.g_sync_replicas_hook = self.g_optim.make_session_run_hook(self.is_chief)
 
         self.saver = tf.train.Saver()
 

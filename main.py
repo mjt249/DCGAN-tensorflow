@@ -119,7 +119,9 @@ def main(_):
                 checkpoint_dir=checkpoint_dir_combined,
                 dataset_dir=FLAGS.dataset_dir,
                 log_dir=FLAGS.log_dir,
-                sample_dir=FLAGS.sample_dir)
+                sample_dir=FLAGS.sample_dir,
+                is_chief=(task_index == 0)
+            )
 
 
         # The MonitoredTrainingSession takes care of session initialization,
