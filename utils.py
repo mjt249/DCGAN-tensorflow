@@ -3,13 +3,10 @@ Some codes from https://github.com/Newmu/dcgan_code
 """
 from __future__ import division
 import math
-import json
-import random
 import os
 import pprint
 import scipy.misc
 import numpy as np
-from time import gmtime, strftime
 from six.moves import xrange
 from tqdm import tqdm
 
@@ -165,7 +162,7 @@ def convert_latent_vector(sdfgan, config):
     else:
         image_dims = [sdfgan.output_depth, sdfgan.input_height, sdfgan.input_width, sdfgan.c_dim]
     ct_inputs = tf.placeholder(tf.float32, [config.batch_size] + image_dims, name='converter_train_inputs')
-    _, _, latent_vect = sdfgan.classifier(ct_inputs)
+    latent_vect = sdfgan.feature_extractor(ct_inputs)
 
     all_train_data, all_test_data = [], []
 
