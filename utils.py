@@ -192,11 +192,11 @@ def convert_latent_vector(sdfgan, config):
 
     # save processed data
     cond_mkdir("latent_vectors")
-    np.save("train_data_latent_vect.npy", all_train_data)
-    np.save("test_data_latent_vect.npy", all_test_data)
-    np.save("train_labels.npy", train_labels)
-    np.save("test_labels.npy", test_labels)
-    target = open("label_names.txt", 'w')
+    np.save("latent_vectors/train_data_latent_vect.npy", all_train_data)
+    np.save("latent_vectors/test_data_latent_vect.npy", all_test_data)
+    np.save("latent_vectors/train_labels.npy", train_labels)
+    np.save("latent_vectors/test_labels.npy", test_labels)
+    target = open("latent_vectors/label_names.txt", 'w')
     for i, lname in enumerate(label_names):
         target.write("id: {0}, ".format(i) + lname + "\n")
     target.close()
