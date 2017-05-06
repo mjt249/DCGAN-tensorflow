@@ -3,7 +3,7 @@ import scipy.misc
 import numpy as np
 
 from model import SDFGAN
-from utils import pp, show_all_variables, create_samples
+from utils import pp, show_all_variables, create_samples, convert_latent_vector
 
 import tensorflow as tf
 
@@ -39,6 +39,7 @@ flags.DEFINE_boolean("is_classifier", False, "True for classifier, false for GAN
 flags.DEFINE_integer("classifier_epoch", 25, "Epoch to train classifier [25]")
 flags.DEFINE_float("c_learning_rate", 0.001, "Learning rate for classifier [1e-3]")
 flags.DEFINE_string("classification_dataset", "ModelNet10", "classification dataset [ModelNet10]")
+flags.DEFINE_boolean("is_convert_latent", False, "True to convert classification dataset to latent vectors [False]")
 
 
 FLAGS = flags.FLAGS
@@ -97,8 +98,11 @@ def main(_):
                     raise Exception("[!] Train a model first, then run test mode")
                 create_samples(sess, sdfgan, FLAGS)
         else:  # classifier
-            sdfgan.build_classifier(FLAGS)
-            sdfgan.train_classifier(FLAGS)
+            if FLAGS.is_convert_latent:
+                convert_latent_vector(sdfgan, FLAGS)
+            else:
+                sdfgan.build_classifier(FLAGS)
+                sdfgan.train_classifier(FLAGS)
 
 if __name__ == '__main__':
     tf.app.run()

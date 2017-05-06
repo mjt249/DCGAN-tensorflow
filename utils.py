@@ -154,7 +154,8 @@ def create_samples(sess, sdfgan, config):
     fname = os.path.join(config.sample_dir, "samples.npy")
     np.save(fname, samples)
 
-def convert_latent_vector(sess, sdfgan, config):
+
+def convert_latent_vector(sdfgan, config):
     sdfgan.n_class = config.classification_dataset[-2:]
     train_files, train_labels, test_files, test_labels, label_names = sdfgan.read_data(config)
 
