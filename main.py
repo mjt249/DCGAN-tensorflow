@@ -99,6 +99,8 @@ def main(_):
                 create_samples(sess, sdfgan, FLAGS)
         else:  # classifier
             if FLAGS.is_convert_latent:
+                if not sdfgan.load(FLAGS.checkpoint_dir):
+                    raise Exception("[!] Train a model first, then run test mode")
                 convert_latent_vector(sdfgan, FLAGS)
             else:
                 sdfgan.build_classifier(FLAGS)
