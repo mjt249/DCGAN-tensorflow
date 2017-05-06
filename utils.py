@@ -11,6 +11,7 @@ import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 from six.moves import xrange
+from tqdm import tqdm
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -152,3 +153,57 @@ def create_samples(sess, sdfgan, config):
     samples = sess.run(sdfgan.sampler, feed_dict={sdfgan.z: z_sample})
     fname = os.path.join(config.sample_dir, "samples.npy")
     np.save(fname, samples)
+
+def convert_latent_vector(sess, sdfgan, config):
+    sdfgan.n_class = config.classification_dataset[-2:]
+    train_files, train_labels, test_files, test_labels, label_names = sdfgan.read_data(config)
+
+    # build graph
+    if sdfgan.is_crop:
+        image_dims = [sdfgan.output_depth, sdfgan.output_height, sdfgan.output_width, sdfgan.c_dim]
+    else:
+        image_dims = [sdfgan.output_depth, sdfgan.input_height, sdfgan.input_width, sdfgan.c_dim]
+    ct_inputs = tf.placeholder(tf.float32, [config.batch_size] + image_dims, name='converter_train_inputs')
+    _, _, latent_vect = sdfgan.classifier(ct_inputs)
+
+    all_train_data, all_test_data = [], []
+
+    # process train data
+    batch_idxs = len(train_files) // config.batch_size
+    print("processing train data:")
+    for idx in tqdm(xrange(0, batch_idxs)):
+        batch_files = train_files[idx * config.batch_size:(idx + 1) * config.batch_size]
+        batch = [np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
+        batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
+        all_train_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+
+    # process test data
+    batch_idxs = len(test_files) // config.batch_size
+    print("processing test data:")
+    for idx in tqdm(xrange(0, batch_idxs)):
+        batch_files = test_files[idx * config.batch_size:(idx + 1) * config.batch_size]
+        batch = [np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
+        batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
+        all_test_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+
+    all_train_data = np.concatenate(all_train_data, axis=0)
+    all_test_data = np.concatenate(all_test_data, axis=0)
+
+    # save processed data
+    cond_mkdir("latent_vectors")
+    np.save("train_data_latent_vect.npy", all_train_data)
+    np.save("test_data_latent_vect.npy", all_test_data)
+    np.save("train_labels.npy", train_labels)
+    np.save("test_labels.npy", test_labels)
+    target = open("label_names.txt", 'w')
+    for i, lname in enumerate(label_names):
+        target.write("id: {0}, ".format(i) + lname + "\n")
+    target.close()
+
+
+def cond_mkdir(directory):
+    """Conditionally make directory if it does not exist"""
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    else:
+        print('Directory ' + directory + ' existed. Did not create.')

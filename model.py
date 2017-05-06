@@ -327,7 +327,7 @@ class SDFGAN(object):
         self.ct_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='classifier_train_inputs')
         self.ct_labels = tf.placeholder(tf.int64, [self.batch_size], name='classifier_train_labels')
         self.ct_labels_onehot = tf.one_hot(self.ct_labels, depth=self.n_class)
-        self.C, self.C_logits = self.classifier(self.ct_inputs)
+        self.C, self.C_logits, _ = self.classifier(self.ct_inputs)
 
         def sigmoid_cross_entropy_with_logits(x, y):
             return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=y)
@@ -357,11 +357,11 @@ class SDFGAN(object):
         with tf.variable_scope("classifier"):
             h4 = linear(tf.reshape(h3, [self.batch_size, -1]), self.n_class, name='c_h3_lin')
             
-            return tf.nn.sigmoid(h4), h4
+            return tf.nn.sigmoid(h4), h4, tf.reshape(h3, [self.batch_size, -1])
     
     def train_classifier(self, config):
         """Train classifier for classification dataset (ModelNet10/40) based on discriminator features"""
-        train_files, train_labels, test_files, test_labels = self.read_data(config)
+        train_files, train_labels, test_files, test_labels, _ = self.read_data(config)
         # define optimizing step
         c_optim = tf.train.AdamOptimizer(config.c_learning_rate, beta1=config.beta1) \
             .minimize(self.c_loss, var_list=self.c_vars)
@@ -375,7 +375,6 @@ class SDFGAN(object):
         self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
         c_counter = 1
-        start_time = time.time()
         could_load, counter = self.load(self.checkpoint_dir)
         if could_load:
             print(" [*] Load SUCCESS")
@@ -428,9 +427,9 @@ class SDFGAN(object):
     def eval_classifier(self, config, partition='test'):
         """Evaluate classifier accuracy given inputs and labels."""
         if partition == 'test':
-            _, _, files, labels = self.read_data(config)
+            _, _, files, labels, _ = self.read_data(config)
         else:
-            files, labels, _, _ = self.read_data(config)
+            files, labels, _, _, _ = self.read_data(config)
 
         batch_idxs = len(files) // config.batch_size
         correct, total = 0, 0
@@ -447,7 +446,6 @@ class SDFGAN(object):
         final_accu = correct / total
 
         return final_accu
-
 
 
     def read_data(self, config):
@@ -470,12 +468,12 @@ class SDFGAN(object):
         test_labels = np.concatenate(test_labels, axis=0)
         label_names = [os.path.basename(c[:-1]) for c in data_classes]
 
-        # shuffle training dataa
+        # shuffle training data
         rand_seq = np.random.permutation(len(train_files))
         train_files = [train_files[ind] for ind in rand_seq]
         train_labels = train_labels[rand_seq]
 
-        return train_files, train_labels, test_files, test_labels
+        return train_files, train_labels, test_files, test_labels, label_names
 
     @property
     def model_dir(self):
