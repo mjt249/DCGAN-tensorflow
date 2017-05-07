@@ -371,10 +371,13 @@ class SDFGAN(object):
 
             # extract features:
             f1 = tf.nn.max_pool3d(h1, [1, 8, 8, 8, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
+            f1 = tf.reshape(f1, [self.batch_size, -1])
             f2 = tf.nn.max_pool3d(h2, [1, 4, 4, 4, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
+            f2 = tf.reshape(f2, [self.batch_size, -1])
             f3 = tf.nn.max_pool3d(h3, [1, 2, 2, 2, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
-            latent_vector = tf.concat([f1, f2, f3], axis=0)
-            assert(int(latent_vector.get_shape()[0]) == 7168)
+            f3 = tf.reshape(f3, [self.batch_size, -1])
+            latent_vector = tf.concat([f1, f2, f3], axis=1)
+            assert(int(latent_vector.get_shape()[1]) == 7168)
 
             return latent_vector
     
