@@ -370,14 +370,14 @@ class SDFGAN(object):
             h3 = lrelu(self.d_bn3(conv3d(h2, self.df_dim * 8, name='d_h3_conv')))
 
             # extract features:
-            f1 = tf.nn.max_pool3d(h1, [1, 8, 8, 8, 1], [1, 2, 2, 2, 1], padding='SAME', name=None)
+            f1 = tf.nn.max_pool3d(h1, [1, 8, 8, 8, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
             f1 = tf.reshape(f1, [self.batch_size, -1])
-            f2 = tf.nn.max_pool3d(h2, [1, 4, 4, 4, 1], [1, 2, 2, 2, 1], padding='SAME', name=None)
+            f2 = tf.nn.max_pool3d(h2, [1, 4, 4, 4, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
             f2 = tf.reshape(f2, [self.batch_size, -1])
-            f3 = tf.nn.max_pool3d(h3, [1, 2, 2, 2, 1], [1, 2, 2, 2, 1], padding='SAME', name=None)
+            f3 = tf.nn.max_pool3d(h3, [1, 2, 2, 2, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
             f3 = tf.reshape(f3, [self.batch_size, -1])
             latent_vector = tf.concat([f1, f2, f3], axis=1)
-            print("size=%d" % int(latent_vector.get_shape()[1]))
+            print("size=%d, %d, %d" % (int(f1.get_shape()[1]), int(f2.get_shape()[1]), int(f3.get_shape()[1])))
             assert(int(latent_vector.get_shape()[1]) == 7168)
 
             return latent_vector
