@@ -377,6 +377,7 @@ class SDFGAN(object):
             f3 = tf.nn.max_pool3d(h3, [1, 2, 2, 2, 1], [1, 1, 1, 1, 1], padding='SAME', name=None)
             f3 = tf.reshape(f3, [self.batch_size, -1])
             latent_vector = tf.concat([f1, f2, f3], axis=1)
+            print("size=%d" % int(latent_vector.get_shape()[1]))
             assert(int(latent_vector.get_shape()[1]) == 7168)
 
             return latent_vector
