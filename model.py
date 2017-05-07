@@ -349,7 +349,7 @@ class SDFGAN(object):
     def classifier(self, image):
         with tf.variable_scope("discriminator") as scope:
             scope.reuse_variables()
-            n_inputs = int(image.get_shape[0])
+            n_inputs = int(image.get_shape()[0])
 
             h0 = lrelu(conv3d(image, self.df_dim, name='d_h0_conv'))
             h1 = lrelu(self.d_bn1(conv3d(h0, self.df_dim * 2, name='d_h1_conv')))
@@ -365,7 +365,7 @@ class SDFGAN(object):
         with tf.variable_scope("discriminator") as scope:
             scope.reuse_variables()
 
-            n_inputs = int(image.get_shape[0])
+            n_inputs = int(image.get_shape()[0])
 
             h0 = lrelu(conv3d(image, self.df_dim, name='d_h0_conv'))
             h1 = lrelu(self.d_bn1(conv3d(h0, self.df_dim * 2, name='d_h1_conv')))
