@@ -3,10 +3,16 @@ import argparse
 import numpy as np
 import os
 
+"""
+Script for running linear svm on GAN based features. Run GAN first.
+Useage: python linear_svm.py LATENT_VEC_DIR
+where SVM_DIR is the directory where the latent vectors are stored.
+"""
+
 if __name__ == '__main__':
     # argument parsing
     parser = argparse.ArgumentParser(description="process mesh to sdf using python multiprocessing module")
-    parser.add_argument('latent_vec_dir', type=str, help='Path to latent_vector directory.')
+    parser.add_argument('latent_vec_dir', type=str, default='latent_vector/', help='Path to latent_vector directory.')
     argument = parser.parse_args()
     load_dir = argument.latent_vec_dir
 
