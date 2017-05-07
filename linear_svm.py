@@ -19,4 +19,6 @@ if __name__ == '__main__':
 
     lin_clf = svm.LinearSVC(C=0.01, intercept_scaling=True, class_weight='balanced', penalty='l2')
     lin_clf.fit(X_train, Y_train)
-    lin_clf.score(X_test, Y_test)
+    train_score = lin_clf.score(X_train, Y_train)
+    test_score = lin_clf.score(X_test, Y_test)
+    print("ACCURACY: Training set: {0}, Test set accuracy: {1}".format(train_score, test_score))
