@@ -177,6 +177,7 @@ def convert_latent_vector(sdfgan, config):
         pad_zeros = np.zeros(pad_shape)
         batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
         data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
+        data_output = data_output[:num_inputs]
 
         return data_output
 
