@@ -168,7 +168,7 @@ def convert_latent_vector(sdfgan, config):
     all_train_data, all_test_data = [], []
 
     # process train data
-    batch_idxs = math.ceil(len(train_files) / config.batch_size)
+    batch_idxs = int(math.ceil(len(train_files) / config.batch_size))
     print("processing train data:")
     for idx in tqdm(xrange(0, batch_idxs)):
         batch_files = train_files[idx * config.batch_size:(idx + 1) * config.batch_size]
@@ -177,7 +177,7 @@ def convert_latent_vector(sdfgan, config):
         all_train_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
 
     # process test data
-    batch_idxs = math.ceil(len(test_files) / config.batch_size)
+    batch_idxs = int(math.ceil(len(test_files) / config.batch_size))
     print("processing test data:")
     for idx in tqdm(xrange(0, batch_idxs)):
         batch_files = test_files[idx * config.batch_size:(idx + 1) * config.batch_size]
