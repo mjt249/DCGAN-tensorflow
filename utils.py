@@ -169,6 +169,17 @@ def convert_latent_vector(sdfgan, config):
 
     # process train data
     batch_idxs = int(math.ceil(len(train_files) / config.batch_size))
+
+    def irregular_batch_process(sdfgan, batch_inputs):
+        num_inputs = batch_inputs.shape[0]
+        pad_shape = [j for j in batch_inputs.shape]
+        pad_shape[0] = sdfgan.batch_size - num_inputs
+        pad_zeros = np.zeros(pad_shape)
+        batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
+        data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
+
+        return data_output
+
     print("processing train data:")
     for idx in tqdm(xrange(0, batch_idxs)):
         batch_files = train_files[idx * config.batch_size:(idx + 1) * config.batch_size]
@@ -177,13 +188,8 @@ def convert_latent_vector(sdfgan, config):
         if batch_inputs.shape[0] == sdfgan.batch_size:
             all_train_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
         else:
-            num_inputs = batch_inputs.shape[0]
-            pad_shape = batch_inputs.shape
-            pad_shape[0] = sdfgan.batch_size - num_inputs
-            pad_zeros = np.zeros(pad_shape)
-            batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
-            data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
-            all_train_data.append(data_output[:num_inputs, :, :, :])
+            data_output = irregular_batch_process(sdfgan, batch_inputs)
+            all_train_data.append(data_output)
 
     # process test data
     batch_idxs = int(math.ceil(len(test_files) / config.batch_size))
@@ -195,13 +201,8 @@ def convert_latent_vector(sdfgan, config):
         if batch_inputs.shape[0] == sdfgan.batch_size:
             all_test_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
         else:
-            num_inputs = batch_inputs.shape[0]
-            pad_shape = batch_inputs.shape
-            pad_shape[0] = sdfgan.batch_size - num_inputs
-            pad_zeros = np.zeros(pad_shape)
-            batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
-            data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
-            all_test_data.append(data_output[:num_inputs, :, :, :])
+            data_output = irregular_batch_process(sdfgan, batch_inputs)
+            all_test_data.append(data_output)
 
     all_train_data = np.concatenate(all_train_data, axis=0)
     all_test_data = np.concatenate(all_test_data, axis=0)
