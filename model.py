@@ -349,13 +349,14 @@ class SDFGAN(object):
     def classifier(self, image):
         with tf.variable_scope("discriminator") as scope:
             scope.reuse_variables()
+            n_inputs = int(image.get_shape[0])
 
             h0 = lrelu(conv3d(image, self.df_dim, name='d_h0_conv'))
             h1 = lrelu(self.d_bn1(conv3d(h0, self.df_dim * 2, name='d_h1_conv')))
             h2 = lrelu(self.d_bn2(conv3d(h1, self.df_dim * 4, name='d_h2_conv')))
             h3 = lrelu(self.d_bn3(conv3d(h2, self.df_dim * 8, name='d_h3_conv')))
         with tf.variable_scope("classifier"):
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), self.n_class, name='c_h3_lin')
+            h4 = linear(tf.reshape(h3, [n_inputs, -1]), self.n_class, name='c_h3_lin')
             
             return tf.nn.sigmoid(h4), h4
 
@@ -364,6 +365,8 @@ class SDFGAN(object):
         with tf.variable_scope("discriminator") as scope:
             scope.reuse_variables()
 
+            n_inputs = int(image.get_shape[0])
+
             h0 = lrelu(conv3d(image, self.df_dim, name='d_h0_conv'))
             h1 = lrelu(self.d_bn1(conv3d(h0, self.df_dim * 2, name='d_h1_conv')))
             h2 = lrelu(self.d_bn2(conv3d(h1, self.df_dim * 4, name='d_h2_conv')))
@@ -371,11 +374,11 @@ class SDFGAN(object):
 
             # extract features:
             f1 = tf.nn.max_pool3d(h1, [1, 8, 8, 8, 1], [1, 8, 8, 8, 1], padding='SAME', name=None)
-            f1 = tf.reshape(f1, [self.batch_size, -1])
+            f1 = tf.reshape(f1, [n_inputs, -1])
             f2 = tf.nn.max_pool3d(h2, [1, 4, 4, 4, 1], [1, 4, 4, 4, 1], padding='SAME', name=None)
-            f2 = tf.reshape(f2, [self.batch_size, -1])
+            f2 = tf.reshape(f2, [n_inputs, -1])
             f3 = tf.nn.max_pool3d(h3, [1, 2, 2, 2, 1], [1, 2, 2, 2, 1], padding='SAME', name=None)
-            f3 = tf.reshape(f3, [self.batch_size, -1])
+            f3 = tf.reshape(f3, [n_inputs, -1])
             latent_vector = tf.concat([f1, f2, f3], axis=1)
             assert(int(latent_vector.get_shape()[1]) == 7168)
 
