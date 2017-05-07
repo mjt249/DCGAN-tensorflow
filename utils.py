@@ -174,7 +174,16 @@ def convert_latent_vector(sdfgan, config):
         batch_files = train_files[idx * config.batch_size:(idx + 1) * config.batch_size]
         batch = [np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
         batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
-        all_train_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+        if batch_inputs.shape[0] == sdfgan.batch_size:
+            all_train_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+        else:
+            num_inputs = batch_inputs.shape[0]
+            pad_shape = batch_inputs.shape
+            pad_shape[0] = sdfgan.batch_size - num_inputs
+            pad_zeros = np.zeros(pad_shape)
+            batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
+            data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
+            all_train_data.append(data_output[:num_inputs, :, :, :])
 
     # process test data
     batch_idxs = int(math.ceil(len(test_files) / config.batch_size))
@@ -183,7 +192,16 @@ def convert_latent_vector(sdfgan, config):
         batch_files = test_files[idx * config.batch_size:(idx + 1) * config.batch_size]
         batch = [np.load(batch_file)[0, :, :, :] for batch_file in batch_files]
         batch_inputs = np.array(batch).astype(np.float32)[:, :, :, :, None]
-        all_test_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+        if batch_inputs.shape[0] == sdfgan.batch_size:
+            all_test_data.append(latent_vect.eval(feed_dict={ct_inputs: batch_inputs}))
+        else:
+            num_inputs = batch_inputs.shape[0]
+            pad_shape = batch_inputs.shape
+            pad_shape[0] = sdfgan.batch_size - num_inputs
+            pad_zeros = np.zeros(pad_shape)
+            batch_inputs = np.concatenate((batch_inputs, pad_zeros), axis=0)
+            data_output = latent_vect.eval(feed_dict={ct_inputs: batch_inputs})
+            all_test_data.append(data_output[:num_inputs, :, :, :])
 
     all_train_data = np.concatenate(all_train_data, axis=0)
     all_test_data = np.concatenate(all_test_data, axis=0)
