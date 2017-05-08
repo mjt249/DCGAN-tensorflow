@@ -34,6 +34,8 @@ flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image s
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
+# evaluation flags
+flags.DEFINE_string("feed_vect", "feed_vect.npy", "File name for input feed vector for generator [feed_vect.npy]")
 # classifier flags
 flags.DEFINE_boolean("is_classifier", False, "True for classifier, false for GAN [False]")
 flags.DEFINE_integer("classifier_epoch", 25, "Epoch to train classifier [25]")
