@@ -150,7 +150,9 @@ def create_samples(sess, sdfgan, config):
     z_sample = np.random.uniform(-1, 1, size=(config.batch_size,sdfgan.z_dim))
     samples = sess.run(sdfgan.sampler, feed_dict={sdfgan.z: z_sample})
     fname = os.path.join(config.sample_dir, "samples.npy")
+    fname2 = os.path.join(config.sample_dir, "latent_vec.npy")
     np.save(fname, samples)
+    np.save(fname2, z_sample)
 
 
 def convert_latent_vector(sdfgan, config):
